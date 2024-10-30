@@ -1,17 +1,16 @@
 // app/layout.tsx
-import './globals.css'; // Import global styles
-import { ReactNode } from 'react';
+import './globals.css'
+import { ReactNode } from 'react'
 
-interface RootLayoutProps {
-  children: ReactNode;
+export const metadata = {
+  title: 'CaribeFly',
+  description: 'Book your flights with ease!',
 }
 
-const RootLayout = ({ children }: RootLayoutProps) => {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-gray-100">{children}</body>
     </html>
-  );
-};
-
-export default RootLayout;
+  )
+}

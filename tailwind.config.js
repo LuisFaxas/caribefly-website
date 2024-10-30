@@ -1,9 +1,8 @@
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
 module.exports = {
   content: [
-    './pages/**/*.{js,ts,jsx,tsx}', // For Next.js 12 or earlier
+    './app/**/*.{js,ts,jsx,tsx}',  // Ensure app directory is included
     './components/**/*.{js,ts,jsx,tsx}',
-    './app/**/*.{js,ts,jsx,tsx}',    // For Next.js 13 with the new App Router
   ],
   theme: {
     extend: {},
