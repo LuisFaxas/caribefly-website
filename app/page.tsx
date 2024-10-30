@@ -3,16 +3,38 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+const services = [
+  { id: 'flights', title: 'Flights', content: '' },
+  { id: 'shipping', title: 'Shipping', content: 'Send packages to Cuba easily.' },
+  { id: 'rentals', title: 'Car Rentals', content: 'Book the best rental cars.' },
+  { id: 'hotels', title: 'Hotels', content: 'Find affordable hotels in Cuba.' },
+  { id: 'tours', title: 'Tours', content: 'Discover exciting tour packages.' },
+]
+
+const charters = [
+  { id: 'xael', title: 'XAEL Charters', flights: [
+    { route: 'Miami - Havana (Mon-Thu)', price: '$289' },
+    { route: 'Miami - Havana (Fri-Sat)', price: '$319' },
+    { route: 'Miami - Camagüey (Fri)', price: '$339' },
+    { route: 'One Way (OW): Miami - Cuba', price: '$219' },
+  ]},
+  { id: 'cubazul', title: 'Cubazul', flights: [] },
+  { id: 'invicta', title: 'Invicta', flights: [] },
+  { id: 'havanaair', title: 'HavanaAir', flights: [] },
+  { id: 'enjoy', title: 'Enjoy', flights: [] },
+]
+
 export default function Home() {
+  const [activeTab, setActiveTab] = useState('flights')
+  const [activeCharter, setActiveCharter] = useState('xael') // Default to 'XAEL'
+  const router = useRouter()
   const [destination, setDestination] = useState('')
   const [dates, setDates] = useState('')
   const [passengers, setPassengers] = useState(1)
-  const router = useRouter()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     console.log(`Searching flights to ${destination} on ${dates} for ${passengers} passengers`)
-    // Logic to redirect to flight search results can be added here
   }
 
   return (
@@ -74,54 +96,69 @@ export default function Home() {
         </form>
       </div>
 
-      {/* Services Section */}
-      <div className="container mx-auto mt-10 p-4">
-        <h2 className="text-3xl font-semibold text-white mb-6 text-center">
-          Explore Our Services
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[
-            { title: 'Flights to Cuba', description: 'Book charter flights with ease.', icon: '✈️' },
-            { title: 'Shipping Services', description: 'Send packages to Cuba.', icon: '📦' },
-            { title: 'Car Rentals in Cuba', description: 'Find the perfect rental car.', icon: '🚗' },
-            { title: 'Hotel Reservations', description: 'Book top hotels in Cuba.', icon: '🏨' },
-            { title: 'Tour Packages', description: 'Explore our guided tours.', icon: '🌴' },
-            { title: 'More Services', description: 'Discover all we offer.', icon: '🔍' },
-          ].map((service) => (
-            <div
-              key={service.title}
-              className="p-6 bg-white rounded-lg shadow-md flex items-center space-x-4"
+      {/* Tabbed Services Section */}
+      <div className="container mx-auto mt-10">
+        <div className="flex justify-center space-x-4 mb-6">
+          {services.map((service) => (
+            <button
+              key={service.id}
+              className={`px-6 py-3 rounded-lg text-lg font-semibold transition ${
+                activeTab === service.id
+                  ? 'bg-blue-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+              }`}
+              onClick={() => setActiveTab(service.id)}
             >
-              <span className="text-4xl">{service.icon}</span>
-              <div>
-                <h3 className="text-xl font-semibold">{service.title}</h3>
-                <p className="text-gray-700">{service.description}</p>
-              </div>
-            </div>
+              {service.title}
+            </button>
           ))}
         </div>
-      </div>
 
-      {/* Promotions Section */}
-      <div className="mt-16 bg-white py-10">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-semibold mb-6">Latest Promotions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { title: '50% off Flights', description: 'Limited-time offer on select flights.' },
-              { title: 'Free Car Rental', description: 'Book a flight and get a free car rental.' },
-              { title: 'Hotel Discounts', description: 'Save up to 30% on hotel stays.' },
-            ].map((promo) => (
-              <div
-                key={promo.title}
-                className="p-6 bg-blue-100 rounded-lg shadow-md hover:bg-blue-200 transition"
-              >
-                <h3 className="text-2xl font-semibold">{promo.title}</h3>
-                <p className="mt-2">{promo.description}</p>
-              </div>
-            ))}
+        {activeTab === 'flights' && (
+          <div className="bg-gradient-to-br from-white to-blue-50 p-8 rounded-xl shadow-md">
+            {/* Sub-Tabs for Charters */}
+            <div className="flex justify-center space-x-6 mb-6">
+              {charters.map((charter) => (
+                <button
+                  key={charter.id}
+                  className={`px-8 py-3 rounded-full text-lg font-medium shadow-lg transition ${
+                    activeCharter === charter.id
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                  onClick={() => setActiveCharter(charter.id)}
+                >
+                  {charter.title}
+                </button>
+              ))}
+            </div>
+
+            {/* Charter Flight Information */}
+            <div className="p-6 bg-white rounded-lg shadow-md">
+              <h2 className="text-2xl font-semibold mb-4">
+                {charters.find((c) => c.id === activeCharter)?.title}
+              </h2>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr>
+                    <th className="border-b-2 p-2">Route</th>
+                    <th className="border-b-2 p-2">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {charters
+                    .find((c) => c.id === activeCharter)
+                    ?.flights.map((flight) => (
+                      <tr key={flight.route}>
+                        <td className="border-b p-2">{flight.route}</td>
+                        <td className="border-b p-2">{flight.price}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Footer */}
