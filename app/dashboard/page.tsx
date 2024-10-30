@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 "use client"
 
 import { useAuth } from '../../hooks/useAuth'
@@ -13,7 +12,7 @@ export default function Dashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!user) {
+    if (user === null) {
       router.push('/login')
     }
   }, [user, router])
@@ -24,7 +23,7 @@ export default function Dashboard() {
     router.push('/login')
   }
 
-  if (!user) {
+  if (user === undefined) {
     return <div className="flex justify-center items-center min-h-screen">Loading...</div>
   }
 
