@@ -1,6 +1,7 @@
 // app/lib/firebaseConfig.ts
 import { initializeApp } from 'firebase/app'
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,13 +12,12 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
+const db = getFirestore(app)
 
-// Set persistence to local storage to maintain session across page reloads
 setPersistence(auth, browserLocalPersistence).catch((error) => {
   console.error('Failed to set persistence:', error)
 })
 
-export { auth }
+export { auth, db }

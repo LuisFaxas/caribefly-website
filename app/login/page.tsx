@@ -1,5 +1,5 @@
 // app/login/page.tsx
-"use client"
+'use client'
 import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../lib/firebaseConfig'
@@ -15,7 +15,11 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      )
       const token = await userCredential.user.getIdToken()
 
       setCookie(null, 'firebaseToken', token, {
@@ -38,7 +42,10 @@ export default function Login() {
         </h2>
         <form onSubmit={handleLogin} className="mt-8 space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email address
             </label>
             <input
@@ -54,7 +61,10 @@ export default function Login() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -81,8 +91,11 @@ export default function Login() {
 
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <a href="/signup" className="font-medium text-blue-600 hover:underline">
+            Dont have an account?{' '}
+            <a
+              href="/signup"
+              className="font-medium text-blue-600 hover:underline"
+            >
               Sign up
             </a>
           </p>

@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useAuth } from '../../hooks/useAuth'
 import { useRouter } from 'next/navigation'
@@ -24,7 +24,11 @@ export default function Dashboard() {
   }
 
   if (user === undefined) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading...
+      </div>
+    )
   }
 
   return (
@@ -37,11 +41,15 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold mb-4">Profile Overview</h2>
-            <p className="text-gray-700">This section can display user-specific details in the future.</p>
+            <p className="text-gray-700">
+              This section can display user-specific details in the future.
+            </p>
           </div>
           <div className="p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold mb-4">Settings</h2>
-            <p className="text-gray-700">Adjust your account settings here (coming soon).</p>
+            <p className="text-gray-700">
+              Adjust your account settings here (coming soon).
+            </p>
           </div>
         </div>
         <div className="mt-10 text-center">

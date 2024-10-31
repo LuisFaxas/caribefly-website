@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
@@ -25,7 +25,9 @@ export default function Signup() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
       <div className="bg-white p-10 rounded-xl shadow-lg w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">Create an Account</h1>
+        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
+          Create an Account
+        </h1>
         {error && (
           <div className="bg-red-100 text-red-700 p-2 rounded mb-4 text-center">
             {error}
@@ -57,10 +59,7 @@ export default function Signup() {
         </form>
         <p className="text-center mt-4 text-gray-600">
           Already have an account?{' '}
-          <a
-            href="/login"
-            className="text-blue-600 hover:underline"
-          >
+          <a href="/login" className="text-blue-600 hover:underline">
             Log in
           </a>
         </p>
