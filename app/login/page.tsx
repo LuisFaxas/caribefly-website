@@ -1,4 +1,3 @@
-// app/login/page.tsx
 'use client'
 import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
@@ -91,7 +90,7 @@ export default function Login() {
 
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-600">
-            Dont have an account?{' '}
+            Don’t have an account?{' '}
             <a
               href="/signup"
               className="font-medium text-blue-600 hover:underline"
@@ -99,6 +98,12 @@ export default function Login() {
               Sign up
             </a>
           </p>
+          <a
+            href="/admin/login"
+            className="text-sm font-medium text-blue-600 hover:underline"
+          >
+            Admin Login
+          </a>
         </div>
       </div>
     </div>

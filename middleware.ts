@@ -1,22 +1,28 @@
 // middleware.ts
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// Define protected routes
-const protectedRoutes = ['/dashboard']
+const clientRoutes = ['/dashboard']
+const adminRoutes = ['/admin/dashboard']
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('firebaseToken')?.value
 
-  // If the user is not logged in and tries to access a protected route, redirect to login
-  if (protectedRoutes.includes(request.nextUrl.pathname) && !token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Redirect to login if no token is present
+  if (!token) {
+    if (clientRoutes.includes(request.nextUrl.pathname)) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    if (adminRoutes.includes(request.nextUrl.pathname)) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
   }
 
   return NextResponse.next()
 }
 
-// Apply middleware to routes
+// Apply middleware to specific routes
 export const config = {
-  matcher: ['/dashboard'],
+  matcher: ['/dashboard', '/admin/dashboard'],
 }
