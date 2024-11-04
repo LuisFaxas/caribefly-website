@@ -1,3 +1,4 @@
+//setCustomClaims.js
 const admin = require('firebase-admin')
 const serviceAccount = require('./caribefly-5148a-firebase-adminsdk-75ry4-1c1090f554.json') // Update the path
 

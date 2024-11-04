@@ -1,28 +1,37 @@
-// middleware.ts
-
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const clientRoutes = ['/dashboard']
-const adminRoutes = ['/admin/dashboard']
+// Define protected routes
+const routes = {
+  admin: ['/admin/dashboard'],
+  client: ['/dashboard'],
+  auth: ['/login', '/signup'],
+  public: ['/'],
+}
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get('firebaseToken')?.value
+  const path = request.nextUrl.pathname
 
-  // Redirect to login if no token is present
-  if (!token) {
-    if (clientRoutes.includes(request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-    if (adminRoutes.includes(request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
-    }
+  // Check route type
+  const isAdminRoute = routes.admin.some((route) => path.startsWith(route))
+  const isClientRoute = routes.client.some((route) => path.startsWith(route))
+  const isAuthRoute = routes.auth.some((route) => path.startsWith(route))
+
+  // If no token and trying to access protected route
+  if (!token && (isAdminRoute || isClientRoute)) {
+    const loginPath = isAdminRoute ? '/admin/login' : '/login'
+    return NextResponse.redirect(new URL(loginPath, request.url))
+  }
+
+  // If has token and trying to access auth routes
+  if (token && isAuthRoute) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return NextResponse.next()
 }
 
-// Apply middleware to specific routes
 export const config = {
-  matcher: ['/dashboard', '/admin/dashboard'],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/login', '/signup'],
 }

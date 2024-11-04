@@ -1,36 +1,35 @@
 'use client'
+
 import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../lib/firebaseConfig'
 import { useRouter } from 'next/navigation'
-import { setCookie } from 'nookies'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { loading } = useAuth()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      )
-      const token = await userCredential.user.getIdToken()
-
-      setCookie(null, 'firebaseToken', token, {
-        maxAge: 30 * 24 * 60 * 60,
-        path: '/',
-      })
-
+      await signInWithEmailAndPassword(auth, email, password)
       router.push('/dashboard')
     } catch (error) {
       setError('Invalid email or password. Please try again.')
       console.error('Login error', error)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-xl">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -90,7 +89,7 @@ export default function Login() {
 
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-gray-600">
-            Don’t have an account?{' '}
+            Dont have an account?{' '}
             <a
               href="/signup"
               className="font-medium text-blue-600 hover:underline"

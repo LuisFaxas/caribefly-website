@@ -1,5 +1,4 @@
-// app/lib/firebaseConfig.ts
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps } from 'firebase/app'
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
@@ -12,12 +11,14 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
 
-const app = initializeApp(firebaseConfig)
+// Initialize Firebase only if it hasn't been initialized
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0]
 const auth = getAuth(app)
 const db = getFirestore(app)
 
+// Set authentication persistence
 setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error('Failed to set persistence:', error)
+  console.error('Firebase persistence error:', error)
 })
 
 export { auth, db }
