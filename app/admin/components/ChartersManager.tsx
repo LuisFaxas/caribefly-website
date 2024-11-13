@@ -1,19 +1,10 @@
+// app/admin/components/ChartersManager.tsx
 'use client'
 
 import { useState } from 'react'
 import { db } from '@/lib/firebaseConfig'
-import { collection, doc, updateDoc, setDoc } from 'firebase/firestore'
-
-interface Flight {
-  route: string
-  price: string
-}
-
-interface Charter {
-  id: string
-  title: string
-  flights: Flight[]
-}
+import { collection, doc, setDoc } from 'firebase/firestore'
+import { Charter, Flight } from '@/types/flight'
 
 interface ChartersManagerProps {
   charters: Charter[]

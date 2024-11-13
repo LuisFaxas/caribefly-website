@@ -1,159 +1,186 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebaseConfig'
 import {
   collection,
   doc,
-  getDocs,
-  updateDoc,
   setDoc,
-  deleteDoc,
   onSnapshot,
+  DocumentData,
 } from 'firebase/firestore'
+import ChartersManager from '../components/ChartersManager'
+import ServicesManager from '../components/ServicesManager'
+import FlightTabsManager from '../components/FlightTabsManager'
+import type { Charter, Service } from '@/types/flight'
+import type {
+  FlightTab,
+  Promotion,
+  Announcement,
+  DashboardData,
+} from '@/types/dashboard'
 
-// Types
-interface Flight {
-  route: string
-  price: string
+// Initial dashboard metrics
+const initialDashboardData: DashboardData = {
+  totalFlights: 0,
+  activePromotions: 0,
+  activeAnnouncements: 0,
+  recentBookings: 0,
+  metrics: {
+    daily: {
+      bookings: 0,
+      revenue: 0,
+      visitors: 0,
+    },
+    weekly: {
+      bookings: 0,
+      revenue: 0,
+      visitors: 0,
+    },
+    monthly: {
+      bookings: 0,
+      revenue: 0,
+      visitors: 0,
+    },
+  },
 }
 
-interface Charter {
-  id: string
-  title: string
-  flights: Flight[]
+type CollectionData = {
+  services: Service[]
+  charters: Charter[]
+  flightTabs: FlightTab[]
+  promotions: Promotion[]
+  announcements: Announcement[]
 }
 
-interface Service {
-  id: string
-  title: string
-  content: string
+type CollectionType = keyof CollectionData
+
+const transformDoc = (doc: DocumentData) => {
+  const data = doc.data()
+  return {
+    id: doc.id,
+    ...data,
+    ...(data.validFrom && {
+      validFrom: data.validFrom.toDate(),
+    }),
+    ...(data.validUntil && {
+      validUntil: data.validUntil.toDate(),
+    }),
+  }
 }
 
 export default function AdminDashboard() {
   const { user, loading, isAdmin, signOut } = useAuth()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState('services')
 
-  // State for services and charters
+  // State Management
+  const [activeSection, setActiveSection] = useState<string>('overview')
   const [services, setServices] = useState<Service[]>([])
   const [charters, setCharters] = useState<Charter[]>([])
-  const [editingService, setEditingService] = useState<Service | null>(null)
-  const [editingCharter, setEditingCharter] = useState<Charter | null>(null)
-  const [newFlight, setNewFlight] = useState({ route: '', price: '' })
+  const [flightTabs, setFlightTabs] = useState<FlightTab[]>([])
+  const [promotions, setPromotions] = useState<Promotion[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [dashboardData, setDashboardData] =
+    useState<DashboardData>(initialDashboardData)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // Fetch data from Firestore
+  // Navigation Items
+  const navigationItems = [
+    { id: 'overview', label: 'Overview', icon: 'ChartPieIcon' },
+    { id: 'flight-tabs', label: 'Flight Tabs', icon: 'TableCellsIcon' },
+    { id: 'charters', label: 'Charters', icon: 'AirplaneIcon' },
+    { id: 'services', label: 'Services', icon: 'BuildingStorefrontIcon' },
+    { id: 'settings', label: 'Settings', icon: 'Cog6ToothIcon' },
+  ]
+
+  // Generic save handler for collections
+  const handleSave = async (
+    collectionName: string,
+    data: any,
+    id: string
+  ): Promise<void> => {
+    setIsSaving(true)
+    try {
+      const docRef = doc(db, collectionName, id)
+      await setDoc(docRef, data, { merge: true })
+    } catch (error) {
+      setError(`Error saving ${collectionName}: ${error}`)
+      throw error
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Collection-specific save handlers
+  const handleSaveCharters = useCallback(async (updatedCharters: Charter[]) => {
+    try {
+      await Promise.all(
+        updatedCharters.map((charter) =>
+          handleSave('charters', charter, charter.id)
+        )
+      )
+    } catch (error) {
+      setError('Error saving charters')
+    }
+  }, [])
+
+  const handleSaveServices = useCallback(async (updatedServices: Service[]) => {
+    try {
+      await Promise.all(
+        updatedServices.map((service) =>
+          handleSave('services', service, service.id)
+        )
+      )
+    } catch (error) {
+      setError('Error saving services')
+    }
+  }, [])
+
+  const handleSaveFlightTabs = useCallback(async (tabs: FlightTab[]) => {
+    try {
+      await handleSave('flightTabs', { tabs }, 'flightTabs')
+    } catch (error) {
+      setError('Error saving flight tabs')
+    }
+  }, [])
+
+  // Fetch Firestore Data
   useEffect(() => {
     if (!user || !isAdmin) return
 
-    const unsubscribeServices = onSnapshot(
-      collection(db, 'services'),
-      (snapshot) => {
-        const servicesData: Service[] = []
-        snapshot.forEach((doc) => {
-          servicesData.push({ id: doc.id, ...doc.data() } as Service)
-        })
-        setServices(servicesData)
-      },
-      (error) => {
-        console.error('Error fetching services:', error)
-        setError('Error loading services')
-      }
+    const collections: Array<{
+      name: CollectionType
+      setter: (data: any[]) => void
+    }> = [
+      { name: 'services', setter: setServices },
+      { name: 'charters', setter: setCharters },
+      { name: 'flightTabs', setter: setFlightTabs },
+      { name: 'promotions', setter: setPromotions },
+      { name: 'announcements', setter: setAnnouncements },
+    ]
+
+    const unsubscribers = collections.map(({ name, setter }) =>
+      onSnapshot(
+        collection(db, name),
+        (snapshot) => {
+          const data = snapshot.docs.map(transformDoc)
+          setter(data)
+        },
+        (error) => {
+          console.error(`Error fetching ${name}:`, error)
+          setError(`Error loading ${name}`)
+        }
+      )
     )
 
-    const unsubscribeCharters = onSnapshot(
-      collection(db, 'charters'),
-      (snapshot) => {
-        const chartersData: Charter[] = []
-        snapshot.forEach((doc) => {
-          chartersData.push({ id: doc.id, ...doc.data() } as Charter)
-        })
-        setCharters(chartersData)
-        setIsLoading(false)
-      },
-      (error) => {
-        console.error('Error fetching charters:', error)
-        setError('Error loading charters')
-        setIsLoading(false)
-      }
-    )
+    setIsLoading(false)
 
-    return () => {
-      unsubscribeServices()
-      unsubscribeCharters()
-    }
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
   }, [user, isAdmin])
-
-  // Save service to Firestore
-  const handleSaveService = async (service: Service) => {
-    try {
-      const serviceRef = doc(db, 'services', service.id)
-      await setDoc(
-        serviceRef,
-        {
-          title: service.title,
-          content: service.content,
-        },
-        { merge: true }
-      )
-      setEditingService(null)
-    } catch (error) {
-      console.error('Error saving service:', error)
-      setError('Error saving service')
-    }
-  }
-
-  // Save charter to Firestore
-  const handleSaveCharter = async (charter: Charter) => {
-    try {
-      const charterRef = doc(db, 'charters', charter.id)
-      await setDoc(
-        charterRef,
-        {
-          title: charter.title,
-          flights: charter.flights,
-        },
-        { merge: true }
-      )
-      setEditingCharter(null)
-    } catch (error) {
-      console.error('Error saving charter:', error)
-      setError('Error saving charter')
-    }
-  }
-
-  // Add new flight to charter
-  const handleAddFlight = (charterId: string) => {
-    if (!newFlight.route || !newFlight.price) return
-
-    const charter = charters.find((c) => c.id === charterId)
-    if (!charter) return
-
-    const updatedCharter = {
-      ...charter,
-      flights: [...charter.flights, newFlight],
-    }
-
-    handleSaveCharter(updatedCharter)
-    setNewFlight({ route: '', price: '' })
-  }
-
-  // Remove flight from charter
-  const handleRemoveFlight = (charterId: string, flightIndex: number) => {
-    const charter = charters.find((c) => c.id === charterId)
-    if (!charter) return
-
-    const updatedCharter = {
-      ...charter,
-      flights: charter.flights.filter((_, index) => index !== flightIndex),
-    }
-
-    handleSaveCharter(updatedCharter)
-  }
 
   // Loading and auth checks
   if (loading || isLoading) {
@@ -169,20 +196,44 @@ export default function AdminDashboard() {
     return null
   }
 
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case 'flight-tabs':
+        return (
+          <FlightTabsManager
+            tabs={flightTabs}
+            onUpdate={handleSaveFlightTabs}
+          />
+        )
+      case 'charters':
+        return (
+          <ChartersManager charters={charters} onUpdate={handleSaveCharters} />
+        )
+      case 'services':
+        return (
+          <ServicesManager services={services} onUpdate={handleSaveServices} />
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-md">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">
-              CaribeFly Admin Dashboard
+              CaribeFly Admin
             </h1>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">{user.email}</span>
+              <span className="text-sm text-gray-500">
+                Logged in as: <span className="font-medium">{user.email}</span>
+              </span>
               <button
                 onClick={() => signOut()}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition"
               >
                 Logout
               </button>
@@ -191,225 +242,50 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
-        <div className="flex space-x-4 mb-8">
-          <button
-            onClick={() => setActiveTab('services')}
-            className={`px-4 py-2 rounded-lg ${
-              activeTab === 'services'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Services
-          </button>
-          <button
-            onClick={() => setActiveTab('charters')}
-            className={`px-4 py-2 rounded-lg ${
-              activeTab === 'charters'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Charters
-          </button>
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-
-        {/* Services Section */}
-        {activeTab === 'services' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Manage Services</h2>
-            <div className="space-y-6">
-              {services.map((service) => (
-                <div key={service.id} className="border rounded-lg p-4">
-                  {editingService?.id === service.id ? (
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        value={editingService.title}
-                        onChange={(e) =>
-                          setEditingService({
-                            ...editingService,
-                            title: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border rounded"
-                      />
-                      <textarea
-                        value={editingService.content}
-                        onChange={(e) =>
-                          setEditingService({
-                            ...editingService,
-                            content: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border rounded h-24"
-                      />
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleSaveService(editingService)}
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingService(null)}
-                          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">
-                          {service.title}
-                        </h3>
-                        <button
-                          onClick={() => setEditingService(service)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                      <p className="text-gray-600">{service.content}</p>
-                    </div>
-                  )}
-                </div>
+      <div className="flex h-[calc(100vh-4rem)]">
+        {/* Sidebar Navigation */}
+        <aside className="w-64 bg-white shadow-sm">
+          <nav className="mt-5 px-2">
+            <div className="space-y-1">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`w-full group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                    activeSection === item.id
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <span className="truncate">{item.label}</span>
+                </button>
               ))}
             </div>
-          </div>
-        )}
+          </nav>
+        </aside>
 
-        {/* Charters Section */}
-        {activeTab === 'charters' && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Manage Charters</h2>
-            <div className="space-y-8">
-              {charters.map((charter) => (
-                <div key={charter.id} className="border rounded-lg p-6">
-                  {editingCharter?.id === charter.id ? (
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        value={editingCharter.title}
-                        onChange={(e) =>
-                          setEditingCharter({
-                            ...editingCharter,
-                            title: e.target.value,
-                          })
-                        }
-                        className="w-full p-2 border rounded"
-                      />
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleSaveCharter(editingCharter)}
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingCharter(null)}
-                          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-xl font-semibold">
-                          {charter.title}
-                        </h3>
-                        <button
-                          onClick={() => setEditingCharter(charter)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Edit Charter
-                        </button>
-                      </div>
-
-                      {/* Flights Table */}
-                      <table className="w-full">
-                        <thead>
-                          <tr>
-                            <th className="text-left pb-2">Route</th>
-                            <th className="text-left pb-2">Price</th>
-                            <th className="text-left pb-2">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {charter.flights.map((flight, index) => (
-                            <tr key={index}>
-                              <td className="py-2">{flight.route}</td>
-                              <td className="py-2">{flight.price}</td>
-                              <td className="py-2">
-                                <button
-                                  onClick={() =>
-                                    handleRemoveFlight(charter.id, index)
-                                  }
-                                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                                >
-                                  Remove
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                      {/* Add New Flight */}
-                      <div className="flex space-x-2">
-                        <input
-                          type="text"
-                          placeholder="Route"
-                          value={newFlight.route}
-                          onChange={(e) =>
-                            setNewFlight({
-                              ...newFlight,
-                              route: e.target.value,
-                            })
-                          }
-                          className="flex-1 p-2 border rounded"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Price"
-                          value={newFlight.price}
-                          onChange={(e) =>
-                            setNewFlight({
-                              ...newFlight,
-                              price: e.target.value,
-                            })
-                          }
-                          className="w-32 p-2 border rounded"
-                        />
-                        <button
-                          onClick={() => handleAddFlight(charter.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          Add Flight
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
+          {/* Notifications */}
+          {error && (
+            <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+              <strong className="font-bold">Error!</strong>
+              <span className="block sm:inline"> {error}</span>
             </div>
+          )}
+
+          {isSaving && (
+            <div className="mb-6 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">
+              <span className="block sm:inline">Saving changes...</span>
+            </div>
+          )}
+
+          {/* Active Section Content */}
+          <div className="bg-white rounded-lg shadow">
+            {renderActiveSection()}
           </div>
-        )}
-      </main>
+        </main>
+      </div>
     </div>
   )
 }
