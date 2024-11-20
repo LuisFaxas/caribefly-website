@@ -69,26 +69,26 @@ export default function AdminLoginPage() {
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      const token = await userCredential.user.getIdTokenResult()
+      const idTokenResult = await userCredential.user.getIdTokenResult()
 
-      if (!token.claims.admin) {
-        throw new Error('Access denied: Admins only')
+      // Check if user has admin claim
+      if (!idTokenResult.claims.admin) {
+        throw new Error('Access denied: Admin privileges required')
       }
-
+      
       // Create session
-      await sessionService.createSession(token.token as any, {
-        maxAge: 3600,
-        secure: true,
-        sameSite: 'strict'
-      })
+      await sessionService.createSession(userCredential.user)
 
       updateLoginAttempts(true)
       router.push('/admin/dashboard')
-    } catch (err) {
+    } catch (err: any) {
       updateLoginAttempts(false)
-      setError(err.message === 'Access denied: Admins only' 
-        ? err.message 
-        : 'Invalid email or password')
+      if (err.message === 'Access denied: Admin privileges required') {
+        setError('Access denied: Admin privileges required')
+      } else {
+        setError('Invalid email or password')
+      }
+      console.error('Login error:', err)
     } finally {
       setLoading(false)
     }
@@ -103,90 +103,80 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-600 to-purple-800">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <Link
-            href="/"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            ← Back to Home
-          </Link>
-          <Link
-            href="/login"
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Regular Login →
-          </Link>
-        </div>
-
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Admin Portal
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Secure access for CaribeFly administrators
-          </p>
-        </div>
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-600 to-purple-800">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+        <Link
+          href="/"
+          className="block text-sm text-indigo-600 hover:underline mb-6"
+        >
+          ← Back to Home
+        </Link>
         
-        <form onSubmit={handleAdminLogin} className="mt-8 space-y-4">
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Admin Login</h1>
+        
+        <form onSubmit={handleAdminLogin} className="space-y-4">
           <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email address
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
             </label>
             <input
-              id="email"
-              name="email"
               type="email"
-              required
+              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 mt-1 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="admin@example.com"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              required
             />
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <input
-              id="password"
-              name="password"
               type="password"
-              required
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 mt-1 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="••••••••"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              required
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded-md bg-red-50 border border-red-200">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="text-red-500 text-sm mt-2">
+              {error}
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 mt-4 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <p className="mt-4 text-xs text-center text-gray-600">
-          This portal is restricted to authorized administrators only. 
-          Unauthorized access attempts will be logged and may result in account lockout.
-        </p>
+        <div className="mt-6 flex items-center justify-between">
+          <Link
+            href="/login"
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            Regular User Login
+          </Link>
+          <Link
+            href="/contact"
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            Need Help?
+          </Link>
+        </div>
+
+        <div className="mt-6 text-xs text-gray-500 text-center">
+          This login is for administrators only. Multiple failed attempts will result in a temporary lockout. 
+          If you need access, please contact the system administrator.
+        </div>
       </div>
     </div>
   )

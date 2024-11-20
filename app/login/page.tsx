@@ -108,7 +108,7 @@ export default function Login() {
             href="/admin/auth/login"
             className="text-sm font-medium text-blue-600 hover:underline"
           >
-            Admin login
+            Admin Login
           </Link>
         </div>
       </div>

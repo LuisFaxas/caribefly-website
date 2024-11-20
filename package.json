@@ -2,11 +2,13 @@
   "name": "caribefly",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "init-db": "ts-node scripts/init-firestore.js",
+    "set-admin": "node --loader ts-node/esm scripts/set-admin.ts",
     "lint": "next lint"
   },
   "dependencies": {

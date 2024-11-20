@@ -205,16 +205,18 @@ export default function AdminDashboard() {
 
   // Auth check effect
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
-      router.push('/admin/auth/login')
+    if (!loading) {
+      if (!user || !isAdmin) {
+        router.replace('/admin/auth/login')
+      }
     }
   }, [user, isAdmin, loading, router])
 
   // Loading check
   if (loading || isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-xl">Loading...</div>
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <div className="text-xl text-gray-600">Loading...</div>
       </div>
     )
   }
