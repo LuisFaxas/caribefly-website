@@ -1,6 +1,8 @@
 'use client'
 
 import type { FlightTab } from '@/types/dashboard'
+import type { Charter, Promotion, Announcement } from '@/types/flight'
+import { Card } from '../../../admin/components/ui/card'
 
 interface FlightTabContentProps {
   tab: FlightTab
