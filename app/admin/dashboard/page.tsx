@@ -203,7 +203,14 @@ export default function AdminDashboard() {
     }
   }, [user, isAdmin])
 
-  // Loading and auth checks
+  // Auth check effect
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin)) {
+      router.push('/admin/auth/login')
+    }
+  }, [user, isAdmin, loading, router])
+
+  // Loading check
   if (loading || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -212,8 +219,8 @@ export default function AdminDashboard() {
     )
   }
 
+  // If not authenticated, render nothing while redirecting
   if (!user || !isAdmin) {
-    router.push('/admin/login')
     return null
   }
 

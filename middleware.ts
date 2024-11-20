@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 const routes = {
   admin: ['/admin/dashboard'],
   client: ['/dashboard'],
-  auth: ['/login', '/signup'],
+  auth: ['/login', '/signup', '/admin/auth/login'],
   public: ['/'],
 }
 
@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   // If no token and trying to access protected route
   if (!token && (isAdminRoute || isClientRoute)) {
-    const loginPath = isAdminRoute ? '/admin/login' : '/login'
+    const loginPath = isAdminRoute ? '/admin/auth/login' : '/login'
     return NextResponse.redirect(new URL(loginPath, request.url))
   }
 
