@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../lib/firebaseConfig'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function Signup() {
   const [email, setEmail] = useState<string>('')
@@ -24,8 +25,14 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
-      <div className="bg-white p-10 rounded-xl shadow-lg w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+        <Link
+          href="/"
+          className="block text-sm text-blue-600 hover:underline mb-4"
+        >
+          ← Back to Home
+        </Link>
         <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
           Create an Account
         </h1>
@@ -58,12 +65,23 @@ export default function Signup() {
             Sign Up
           </button>
         </form>
-        <p className="text-center mt-4 text-gray-600">
-          Already have an account?{' '}
-          <a href="/login" className="text-blue-600 hover:underline">
-            Log in
-          </a>
-        </p>
+        <div className="flex items-center justify-between mt-6">
+          <p className="text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link
+              href="/login"
+              className="font-medium text-blue-600 hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+          <Link
+            href="/admin/login"
+            className="text-sm font-medium text-blue-600 hover:underline"
+          >
+            Admin login
+          </Link>
+        </div>
       </div>
     </div>
   )

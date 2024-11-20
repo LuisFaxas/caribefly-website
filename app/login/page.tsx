@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../../lib/firebaseConfig'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../../contexts/AuthContext'
+import Link from 'next/link'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -35,6 +36,12 @@ export default function Login() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
+        <Link
+          href="/"
+          className="block text-sm text-blue-600 hover:underline mb-4"
+        >
+          ← Back to Home
+        </Link>
         <h2 className="text-3xl font-extrabold text-center text-gray-900">
           Sign in to <span className="text-blue-600">CaribeFly</span>
         </h2>
