@@ -1,4 +1,3 @@
-// app/admin/login/page.tsx
 'use client'
 
 import { useState } from 'react'
@@ -97,25 +96,38 @@ export default function AdminLoginPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-600 to-purple-800">
         <div className="text-xl text-white">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-600 to-purple-800">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg">
-        <Link
-          href="/"
-          className="block text-sm text-blue-600 hover:underline mb-4"
-        >
-          ← Back to Home
-        </Link>
-        
-        <h2 className="text-3xl font-extrabold text-center text-gray-900">
-          Admin Login - <span className="text-blue-600">CaribeFly</span>
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <Link
+            href="/"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            ← Back to Home
+          </Link>
+          <Link
+            href="/login"
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Regular Login →
+          </Link>
+        </div>
+
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900">
+            Admin Portal
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Secure access for CaribeFly administrators
+          </p>
+        </div>
         
         <form onSubmit={handleAdminLogin} className="mt-8 space-y-4">
           <div>
@@ -156,36 +168,25 @@ export default function AdminLoginPage() {
             />
           </div>
 
+          {error && (
+            <div className="p-3 rounded-md bg-red-50 border border-red-200">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 mt-4 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 mt-4 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
-
-          {error && (
-            <p className="mt-2 text-center text-red-500">{error}</p>
-          )}
         </form>
 
-        <div className="flex items-center justify-between mt-6">
-          <p className="text-sm text-gray-600">
-            Not an admin?{' '}
-            <Link
-              href="/login"
-              className="font-medium text-blue-600 hover:underline"
-            >
-              Regular login
-            </Link>
-          </p>
-          <Link
-            href="/signup"
-            className="text-sm font-medium text-blue-600 hover:underline"
-          >
-            Sign up
-          </Link>
-        </div>
+        <p className="mt-4 text-xs text-center text-gray-600">
+          This portal is restricted to authorized administrators only. 
+          Unauthorized access attempts will be logged and may result in account lockout.
+        </p>
       </div>
     </div>
   )
