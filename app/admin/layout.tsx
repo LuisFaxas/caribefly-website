@@ -7,6 +7,11 @@ import Link from 'next/link'
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname()
 
+  // Don't show navigation for auth pages
+  if (pathname?.startsWith('/admin/auth')) {
+    return <>{children}</>
+  }
+
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard' },
     { name: 'Charter Editor', href: '/admin/charter-editor' },
@@ -50,9 +55,11 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {children}
+      {/* Main content */}
+      <main className="py-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {children}
+        </div>
       </main>
     </div>
   )

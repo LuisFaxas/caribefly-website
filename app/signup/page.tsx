@@ -76,7 +76,7 @@ export default function Signup() {
             </Link>
           </p>
           <Link
-            href="/admin/login"
+            href="/admin/auth/login"
             className="text-sm font-medium text-blue-600 hover:underline"
           >
             Admin login

@@ -104,12 +104,12 @@ export default function Login() {
               Sign up
             </a>
           </p>
-          <a
-            href="/admin/login"
+          <Link
+            href="/admin/auth/login"
             className="text-sm font-medium text-blue-600 hover:underline"
           >
-            Admin Login
-          </a>
+            Admin login
+          </Link>
         </div>
       </div>
     </div>
