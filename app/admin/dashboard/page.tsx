@@ -153,18 +153,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!user || !isAdmin) return
 
-    const collections: Array<{
-      name: CollectionType
-      setter: (data: any[]) => void
-    }> = [
+    // Handle regular collections
+    const regularCollections = [
       { name: 'services', setter: setServices },
       { name: 'charters', setter: setCharters },
-      { name: 'flightTabs', setter: setFlightTabs },
       { name: 'promotions', setter: setPromotions },
       { name: 'announcements', setter: setAnnouncements },
     ]
 
-    const unsubscribers = collections.map(({ name, setter }) =>
+    const unsubscribers = regularCollections.map(({ name, setter }) =>
       onSnapshot(
         collection(db, name),
         (snapshot) => {
@@ -178,9 +175,32 @@ export default function AdminDashboard() {
       )
     )
 
+    // Handle flightTabs separately since it's a single document with an array
+    const flightTabsUnsubscriber = onSnapshot(
+      doc(db, 'flightTabs', 'flightTabs'),
+      (snapshot) => {
+        const data = snapshot.data()
+        if (data && Array.isArray(data.tabs)) {
+          setFlightTabs(data.tabs.map(tab => ({
+            ...tab,
+            widgets: tab.widgets || [] // Ensure widgets is always an array
+          })))
+        } else {
+          setFlightTabs([]) // Set empty array if no data
+        }
+      },
+      (error) => {
+        console.error('Error fetching flight tabs:', error)
+        setError('Error loading flight tabs')
+      }
+    )
+
     setIsLoading(false)
 
-    return () => unsubscribers.forEach((unsubscribe) => unsubscribe())
+    return () => {
+      unsubscribers.forEach((unsubscribe) => unsubscribe())
+      flightTabsUnsubscriber()
+    }
   }, [user, isAdmin])
 
   // Loading and auth checks

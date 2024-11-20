@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebaseConfig'
 import { collection, getDocs } from 'firebase/firestore'
 import FlightSearch from './components/FlightSearch'
+import FlightTabContent from './components/flights/FlightTabContent'
 import type { Charter, Service, SearchParams } from '@/types/flight'
 import type { FlightTab } from '@/types/dashboard'
 
@@ -152,7 +153,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="mt-10 md:mt-16 bg-blue-600 text-white py-4 text-center text-sm md:text-base">
-        © {new Date().getFullYear()} CaribeFly - Your Travel Partner to Cuba
+        {new Date().getFullYear()} CaribeFly - Your Travel Partner to Cuba
       </footer>
     </div>
   )

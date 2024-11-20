@@ -26,8 +26,8 @@ export default function FlightTabsManager({
       id: `tab-${Date.now()}`,
       title: 'New Tab',
       description: '',
-      order: tabs.length,
-      widgets: [],
+      order: (tabs || []).length,
+      widgets: [], // Ensure widgets array is initialized
       active: true,
     }
     setEditingTab(newTab)
@@ -37,8 +37,8 @@ export default function FlightTabsManager({
   const handleSaveTab = async (tab: FlightTab) => {
     try {
       const updatedTabs = isCreating
-        ? [...tabs, tab]
-        : tabs.map((t) => (t.id === tab.id ? tab : t))
+        ? [...(tabs || []), tab]
+        : (tabs || []).map((t) => (t.id === tab.id ? tab : t))
 
       await onUpdate(updatedTabs)
       setEditingTab(null)
@@ -50,7 +50,7 @@ export default function FlightTabsManager({
 
   const handleDeleteTab = async (tabId: string) => {
     try {
-      const updatedTabs = tabs.filter((t) => t.id !== tabId)
+      const updatedTabs = (tabs || []).filter((t) => t.id !== tabId)
       // Reorder remaining tabs
       updatedTabs.forEach((tab, index) => {
         tab.order = index
@@ -63,15 +63,15 @@ export default function FlightTabsManager({
   }
 
   const handleMoveTab = async (tabId: string, direction: 'up' | 'down') => {
-    const currentIndex = tabs.findIndex((t) => t.id === tabId)
+    const currentIndex = (tabs || []).findIndex((t) => t.id === tabId)
     if (
       (direction === 'up' && currentIndex === 0) ||
-      (direction === 'down' && currentIndex === tabs.length - 1)
+      (direction === 'down' && currentIndex === (tabs || []).length - 1)
     ) {
       return
     }
 
-    const updatedTabs = [...tabs]
+    const updatedTabs = [...(tabs || [])]
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
     const [movedTab] = updatedTabs.splice(currentIndex, 1)
     updatedTabs.splice(newIndex, 0, movedTab)
@@ -101,7 +101,7 @@ export default function FlightTabsManager({
 
       {/* Tabs List */}
       <div className="grid gap-6">
-        {tabs
+        {(tabs || [])
           .sort((a, b) => a.order - b.order)
           .map((tab, index) => (
             <div
@@ -122,7 +122,7 @@ export default function FlightTabsManager({
                         </button>
                         <button
                           onClick={() => handleMoveTab(tab.id, 'down')}
-                          disabled={index === tabs.length - 1}
+                          disabled={index === (tabs || []).length - 1}
                           className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
                         >
                           ↓
@@ -148,7 +148,7 @@ export default function FlightTabsManager({
                             {tab.active ? 'Active' : 'Inactive'}
                           </span>
                           <span className="text-xs text-gray-500">
-                            {tab.widgets.length} widgets
+                            {(tab?.widgets || []).length} widgets
                           </span>
                           <span className="text-xs text-gray-500">
                             Order: {tab.order}
