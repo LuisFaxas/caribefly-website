@@ -21,7 +21,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     await signOut(auth)
     destroyCookie(null, 'firebaseToken') // Clear the token
-    router.push('/login')
+    router.push('/')  // Redirect to home page instead of login
   }
 
   if (user === undefined) {
