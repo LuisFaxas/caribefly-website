@@ -20,12 +20,16 @@ export default function AdminLoginPage() {
   const sessionService = SessionService.getInstance()
 
   const checkLoginAttempts = (): boolean => {
-    const attempts = JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count": 0}')
+    const attempts = JSON.parse(
+      localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count": 0}'
+    )
     const now = Date.now()
 
     if (attempts.lockUntil && now < attempts.lockUntil) {
       const remainingMinutes = Math.ceil((attempts.lockUntil - now) / 60000)
-      setError(`Too many failed attempts. Please try again in ${remainingMinutes} minutes.`)
+      setError(
+        `Too many failed attempts. Please try again in ${remainingMinutes} minutes.`
+      )
       return false
     }
 
@@ -39,8 +43,10 @@ export default function AdminLoginPage() {
   }
 
   const updateLoginAttempts = (success: boolean) => {
-    const attempts = JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count": 0}')
-    
+    const attempts = JSON.parse(
+      localStorage.getItem(LOGIN_ATTEMPTS_KEY) || '{"count": 0}'
+    )
+
     if (success) {
       localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify({ count: 0 }))
       return
@@ -48,18 +54,24 @@ export default function AdminLoginPage() {
 
     const newCount = attempts.count + 1
     if (newCount >= MAX_LOGIN_ATTEMPTS) {
-      localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify({
-        count: newCount,
-        lockUntil: Date.now() + LOCKOUT_DURATION
-      }))
+      localStorage.setItem(
+        LOGIN_ATTEMPTS_KEY,
+        JSON.stringify({
+          count: newCount,
+          lockUntil: Date.now() + LOCKOUT_DURATION,
+        })
+      )
     } else {
-      localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify({ count: newCount }))
+      localStorage.setItem(
+        LOGIN_ATTEMPTS_KEY,
+        JSON.stringify({ count: newCount })
+      )
     }
   }
 
   const handleAdminLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    
+
     if (!checkLoginAttempts()) {
       return
     }
@@ -68,14 +80,18 @@ export default function AdminLoginPage() {
     setError('')
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      )
       const idTokenResult = await userCredential.user.getIdTokenResult()
 
       // Check if user has admin claim
       if (!idTokenResult.claims.admin) {
         throw new Error('Access denied: Admin privileges required')
       }
-      
+
       // Create session
       await sessionService.createSession(userCredential.user)
 
@@ -111,12 +127,17 @@ export default function AdminLoginPage() {
         >
           ← Back to Home
         </Link>
-        
-        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">Admin Login</h1>
-        
+
+        <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Admin Login
+        </h1>
+
         <form onSubmit={handleAdminLogin} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email
             </label>
             <input
@@ -130,7 +151,10 @@ export default function AdminLoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -143,11 +167,7 @@ export default function AdminLoginPage() {
             />
           </div>
 
-          {error && (
-            <div className="text-red-500 text-sm mt-2">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
 
           <button
             type="submit"
@@ -174,8 +194,9 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="mt-6 text-xs text-gray-500 text-center">
-          This login is for administrators only. Multiple failed attempts will result in a temporary lockout. 
-          If you need access, please contact the system administrator.
+          This login is for administrators only. Multiple failed attempts will
+          result in a temporary lockout. If you need access, please contact the
+          system administrator.
         </div>
       </div>
     </div>

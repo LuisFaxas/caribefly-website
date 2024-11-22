@@ -47,9 +47,7 @@ export const AnnouncementCard: React.FC<Widget> = ({ content }) => {
   }
 
   return (
-    <div
-      className={`p-4 rounded-lg border ${getBgColor()} ${getTextColor()}`}
-    >
+    <div className={`p-4 rounded-lg border ${getBgColor()} ${getTextColor()}`}>
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-lg font-semibold">{announcement.title}</h3>
         <span

@@ -15,6 +15,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard' },
     { name: 'Charter Editor', href: '/admin/charter-editor' },
+    { name: 'Price Management', href: '/admin/price-management' },
   ]
 
   return (

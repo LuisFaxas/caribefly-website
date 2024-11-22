@@ -1,0 +1,104 @@
+/* Price Management Theme */
+.price-management-theme {
+  @apply bg-gray-900 min-h-screen;
+}
+
+/* Price Sheet Styles */
+.price-sheet {
+  @apply bg-gradient-to-b from-gray-800 to-gray-900 p-8 text-white rounded-lg shadow-xl;
+}
+
+.price-period {
+  @apply bg-gray-700/90 p-2 rounded-lg;
+}
+
+/* Editor Styles */
+.editor-section {
+  @apply bg-gray-800 p-6 rounded-lg shadow-md;
+}
+
+.editor-header {
+  @apply text-xl font-semibold text-white mb-4;
+}
+
+.editor-card {
+  @apply bg-gray-800 border-gray-600 rounded-lg shadow-md overflow-hidden;
+}
+
+.editor-card-header {
+  @apply flex justify-between items-center mb-4;
+}
+
+.editor-input {
+  @apply bg-gray-700 text-white border-gray-600 rounded-md;
+}
+
+/* Toolbar Styles */
+.toolbar-section {
+  @apply space-y-6 bg-gray-800 p-6 rounded-lg shadow-md text-white;
+}
+
+.toolbar-group {
+  @apply bg-gray-700 p-4 rounded-lg;
+}
+
+.toolbar-header {
+  @apply text-lg font-semibold mb-2;
+}
+
+/* Button Variants */
+.btn-primary {
+  @apply bg-blue-500 hover:bg-blue-600 text-white;
+}
+
+.btn-danger {
+  @apply text-red-400 hover:text-red-300 hover:bg-red-900/20;
+}
+
+.btn-success {
+  @apply bg-green-500 hover:bg-green-600 text-white;
+}
+
+/* Flight Schedule Styles */
+.flight-schedule {
+  @apply grid grid-cols-2 gap-4;
+}
+
+.flight-time {
+  @apply flex items-center space-x-2;
+}
+
+/* Price Period Styles */
+.price-period-grid {
+  @apply grid grid-cols-2 gap-2;
+}
+
+.price-input-group {
+  @apply space-y-2;
+}
+
+/* Info Section Styles */
+.info-section {
+  @apply mt-6 space-y-4;
+}
+
+.info-header {
+  @apply text-yellow-400 font-medium mb-1;
+}
+
+.info-list {
+  @apply space-y-1 text-gray-300;
+}
+
+/* Contact Section */
+.contact-section {
+  @apply text-right space-y-2;
+}
+
+.contact-header {
+  @apply text-yellow-400 text-xs mb-1;
+}
+
+.contact-item {
+  @apply flex items-center justify-end gap-2 text-lg font-bold;
+}

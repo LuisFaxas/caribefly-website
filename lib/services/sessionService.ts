@@ -17,7 +17,7 @@ export class SessionService {
   async createSession(user: User): Promise<void> {
     try {
       const token = await user.getIdToken()
-      
+
       // Set session cookie
       setCookie(null, 'session', token, {
         maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -35,7 +35,7 @@ export class SessionService {
     try {
       // Sign out from Firebase
       auth.signOut()
-      
+
       // Remove session cookie
       destroyCookie(null, 'session', {
         path: '/',

@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await auth.signOut()
       destroyCookie(null, 'firebaseToken')
-      router.push('/')  
+      router.push('/')
     } catch (error) {
       console.error('Sign out error:', error)
     }
