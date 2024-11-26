@@ -1,6 +1,5 @@
 import React from 'react'
-import { Input } from '@/app/components/ui/input'
-import { Button } from '@/app/components/ui/button'
+import { Input, Button } from '@/app/components/ui'
 
 interface InfoEditorProps {
   info: string[]

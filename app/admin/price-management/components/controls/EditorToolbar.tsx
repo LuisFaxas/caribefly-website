@@ -1,19 +1,21 @@
 // src/components/controls/EditorToolbar.tsx
 
 import React, { useRef, useMemo } from 'react'
-import { Button } from '@/app/components/ui/button'
-import { Input } from '@/app/components/ui/input'
-import { Label } from '@/app/components/ui/label'
-import Select from '@/app/components/ui/select'
+import { Button, Input, Label, Select } from '@/app/components/ui'
 import PriceEditor from '../editors/PriceEditor'
-import type { CharterData } from '@/app/types/charter'
+import type {
+  CharterData,
+  GlobalProfit,
+  DestinationData,
+} from '@/types/charter'
+import { validateDestination } from '../../utils/validation'
 import { FaSave, FaDownload, FaUpload } from 'react-icons/fa'
 
 interface EditorToolbarProps {
   charters: CharterData[]
-  globalProfit: any
+  globalProfit: GlobalProfit
   onCharterUpdate: (charters: CharterData[]) => void
-  onGlobalProfitChange: (profit: any) => void
+  onGlobalProfitChange: (profit: GlobalProfit) => void
   onDownload: () => void
   onSave: () => void
   onLoad: () => void
@@ -45,111 +47,124 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
   // Get all unique destinations across all charters
   const allDestinations = useMemo(() => {
-    const destinations = new Set<string>()
+    const destinations = new Set<string>(['MIA-HAV']) // Always include MIA-HAV
+    if (!charters?.length) return Array.from(destinations)
+
     charters.forEach((charter) => {
-      charter.destinations.forEach((dest) => {
-        destinations.add(dest.destination)
+      charter?.destinations?.forEach((dest) => {
+        if (dest?.destination) {
+          destinations.add(dest.destination)
+        }
       })
     })
-    return Array.from(destinations).sort((a, b) => {
-      if (a === 'MIA-HAV') return -1
-      if (b === 'MIA-HAV') return 1
-      return a.localeCompare(b)
-    })
+    return Array.from(destinations).sort()
   }, [charters])
 
   // Get available charters for selected destination
   const availableCharters = useMemo(() => {
-    if (!selectedDestination) return []
-    return charters.filter((charter) =>
-      charter.destinations.some(
-        (dest) => dest.destination === selectedDestination
-      )
+    if (!selectedDestination || !charters?.length) return []
+    return charters.filter(
+      (charter) =>
+        charter?.destinations?.some?.(
+          (dest) => dest?.destination === selectedDestination
+        ) ?? false
     )
   }, [charters, selectedDestination])
 
   // Get current destination data
   const currentDestinationData = useMemo(() => {
-    if (selectedCharterIndex < 0 || !selectedDestination) return undefined
-    const charter = charters[selectedCharterIndex]
-    return charter?.destinations.find(
-      (dest) => dest.destination === selectedDestination
+    if (
+      selectedCharterIndex < 0 ||
+      !selectedDestination ||
+      !charters?.[selectedCharterIndex]
+    )
+      return undefined
+    return charters[selectedCharterIndex]?.destinations?.find?.(
+      (dest) => dest?.destination === selectedDestination
     )
   }, [charters, selectedCharterIndex, selectedDestination])
 
   // File upload handler
-  const handleFileUpload = (
+  const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
     callback: (result: string) => void
   ) => {
     const file = event.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        if (reader.result) {
-          callback(reader.result as string)
-        }
-      }
-      reader.readAsDataURL(file)
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      console.error('Only image files are allowed')
+      return
     }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('File size must be less than 5MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (reader.result) {
+        callback(reader.result as string)
+      }
+    }
+    reader.onerror = (error) => {
+      console.error('Error reading file:', error)
+    }
+    reader.readAsDataURL(file)
   }
 
   // Destination update handler
-  const handleDestinationUpdate = (updatedDestData: any) => {
+  const handleDestinationUpdate = (updatedDestData: DestinationData) => {
     if (!selectedDestination || selectedCharterIndex < 0) return
 
-    // Create a copy of the charters array
     const updatedCharters = [...charters]
-
-    // Create a copy of the selected charter
     const charter = { ...updatedCharters[selectedCharterIndex] }
-
-    // Create a copy of the destinations array
     charter.destinations = [...charter.destinations]
-
-    // Update the charter in the updatedCharters array
     updatedCharters[selectedCharterIndex] = charter
 
-    // Find the index of the destination to update
     const destIndex = charter.destinations.findIndex(
       (dest) => dest.destination === selectedDestination
     )
 
     if (destIndex >= 0) {
-      // Create a copy of the updated destination data
-      const updatedDestination = { ...updatedDestData }
+      // Validate the updated destination data
+      const validationResult = validateDestination(updatedDestData)
+      if (!validationResult.isValid) {
+        console.error('Validation errors:', validationResult.errors)
+        return
+      }
 
-      // Update the destination
-      charter.destinations[destIndex] = updatedDestination
-
-      // Update the state with the new charters array
+      charter.destinations[destIndex] = {
+        ...updatedDestData,
+        lastUpdated: new Date().toISOString(),
+      }
       onCharterUpdate(updatedCharters)
     }
   }
 
   return (
     <div className="space-y-6 bg-gray-800 p-6 rounded-lg shadow-md text-white">
-      {/* Destination Selector - First */}
+      {/* Destination Selector */}
       <div className="bg-gray-700 p-4 rounded-lg">
         <Label
           htmlFor="destinationSelect"
           className="text-xl font-semibold mb-2 text-white"
         >
-          Seleccionar Destino
+          Destino
         </Label>
         <Select
           id="destinationSelect"
           value={selectedDestination}
           onChange={(e) => onDestinationChange(e.target.value)}
           className="bg-gray-600 text-white"
-        >
-          <option value="">Seleccionar destino...</option>
-          {allDestinations.map((destination) => (
-            <option key={destination} value={destination}>
-              {destination}
-            </option>
-          ))}
-        </Select>
+          options={allDestinations.map((dest) => ({
+            value: dest,
+            label: dest,
+          }))}
+        />
       </div>
 
       {/* Global Profit Settings */}
@@ -210,17 +225,17 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </Label>
           <Select
             id="charterSelect"
-            value={selectedCharterIndex}
+            value={selectedCharterIndex.toString()}
             onChange={(e) => onSelectCharter(Number(e.target.value))}
             className="bg-gray-600 text-white"
-          >
-            <option value={-1}>Seleccionar charter...</option>
-            {availableCharters.map((charter) => (
-              <option key={charter.name} value={charters.indexOf(charter)}>
-                {charter.name}
-              </option>
-            ))}
-          </Select>
+            options={[
+              { value: '-1', label: 'Seleccionar charter...' },
+              ...(availableCharters?.map((charter) => ({
+                value: charters.indexOf(charter).toString(),
+                label: charter.name || 'Charter sin nombre',
+              })) || []),
+            ]}
+          />
         </div>
       )}
 

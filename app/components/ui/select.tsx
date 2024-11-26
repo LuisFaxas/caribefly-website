@@ -1,12 +1,13 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  options: { value: string; label: string }[]
+export interface SelectProps
+  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  options?: { value: string; label: string }[]
 }
 
-const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, options, ...props }, ref) => {
+export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+  ({ className, options = [], ...props }, ref) => {
     return (
       <select
         ref={ref}
@@ -26,5 +27,3 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   }
 )
 Select.displayName = 'Select'
-
-export default Select

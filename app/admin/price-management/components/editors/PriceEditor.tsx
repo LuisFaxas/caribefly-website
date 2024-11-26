@@ -1,12 +1,9 @@
 // src/components/editors/PriceEditor.tsx
 
 import React, { useState, useEffect } from 'react'
-import { Card, CardContent } from '@/app/components/ui/card'
-import { Input } from '@/app/components/ui/input'
-import { Label } from '@/app/components/ui/label'
-import { Button } from '@/app/components/ui/button'
+import { Card, CardContent, Input, Label, Button } from '@/app/components/ui'
 import TimeSelector from '../ui/TimeSelector'
-import type { CharterData } from '@/app/types/charter'
+import type { CharterData, GlobalProfit } from '@/types/charter'
 import { FaTrash, FaPlus } from 'react-icons/fa'
 import BaggageInfoEditor from './BaggageInfoEditor'
 import InfoEditor from './InfoEditor'
@@ -15,22 +12,55 @@ interface PriceEditorProps {
   charters: CharterData[]
   selectedDestination: string
   selectedCharterIndex: number
+  globalProfit: GlobalProfit
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
   charters,
   selectedDestination,
   selectedCharterIndex,
+  globalProfit,
 }) => {
   // Create a local copy for editing
-  const [localData, setLocalData] = useState<CharterData>(
-    charters[selectedCharterIndex]
+  const [localData, setLocalData] = useState<CharterData | null>(null)
+
+  // Reset localData when selected charter changes
+  useEffect(() => {
+    if (selectedCharterIndex >= 0 && charters?.[selectedCharterIndex]) {
+      setLocalData(charters[selectedCharterIndex])
+    } else {
+      setLocalData(null)
+    }
+  }, [charters, selectedCharterIndex])
+
+  if (!localData) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            Select a charter to edit its details
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Get the current destination data
+  const destinationData = localData.destinations.find(
+    (dest) => dest.destination === selectedDestination
   )
 
-  // Reset localData when destinationData changes
-  useEffect(() => {
-    setLocalData(charters[selectedCharterIndex])
-  }, [charters, selectedCharterIndex])
+  if (!destinationData) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-gray-500">
+            No data found for the selected destination
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Apply updates and notify parent
   const applyUpdates = (updatedData: CharterData) => {

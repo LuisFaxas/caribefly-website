@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import PriceEditor from './components/editors/PriceEditor'
 import EditorToolbar from './components/controls/EditorToolbar'
 import PriceSheet from './components/sheets/PriceSheet'
-import type { CharterData } from '@/types/charter'
+import type { CharterData, GlobalProfit } from '@/types/charter'
 
 export default function PriceManagementPage() {
   const { user, isAdmin } = useAuth()
@@ -21,6 +21,10 @@ export default function PriceManagementPage() {
   const [loading, setLoading] = useState(true)
   const [agencyLogo, setAgencyLogo] = useState<string>('')
   const [promotionalImage, setPromotionalImage] = useState<string>('')
+  const [globalProfit, setGlobalProfit] = useState<GlobalProfit>({
+    rt: 20,
+    ow: 20,
+  })
 
   useEffect(() => {
     if (!user || !isAdmin) {
@@ -28,6 +32,7 @@ export default function PriceManagementPage() {
       return
     }
 
+    setLoading(true)
     const unsubscribe = onSnapshot(collection(db, 'charters'), (snapshot) => {
       const data = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -37,11 +42,30 @@ export default function PriceManagementPage() {
       setLoading(false)
     })
 
-    return () => unsubscribe()
+    return () => {
+      unsubscribe()
+      setLoading(false)
+    }
   }, [user, isAdmin, router])
+
+  useEffect(() => {
+    setSelectedCharterIndex(-1)
+  }, [selectedDestination])
 
   const handleCharterUpdate = (updatedCharters: CharterData[]) => {
     setCharters(updatedCharters)
+  }
+
+  const handleGlobalProfitChange = (profit: GlobalProfit) => {
+    setGlobalProfit(profit)
+  }
+
+  const handleAgencyLogoChange = (logo: string) => {
+    setAgencyLogo(logo)
+  }
+
+  const handlePromotionalImageChange = (image: string) => {
+    setPromotionalImage(image)
   }
 
   if (loading) {
@@ -53,37 +77,38 @@ export default function PriceManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Charter Price Management</h1>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Charter Price Management</h1>
+        </div>
 
         <div className="grid grid-cols-12 gap-6">
-          {/* Toolbar */}
           <div className="col-span-3">
             <EditorToolbar
               charters={charters}
+              globalProfit={globalProfit}
+              onCharterUpdate={handleCharterUpdate}
+              onGlobalProfitChange={handleGlobalProfitChange}
+              onDownload={() => {}}
+              onSave={() => {}}
+              onLoad={() => {}}
+              onAgencyLogoChange={handleAgencyLogoChange}
+              onPromotionalImageChange={handlePromotionalImageChange}
               selectedDestination={selectedDestination}
               onDestinationChange={setSelectedDestination}
               selectedCharterIndex={selectedCharterIndex}
               onSelectCharter={setSelectedCharterIndex}
-              onCharterUpdate={handleCharterUpdate}
-              onAgencyLogoChange={setAgencyLogo}
-              onPromotionalImageChange={setPromotionalImage}
-              onSave={() => console.log('Save clicked')}
-              onLoad={() => console.log('Load clicked')}
-              onDownload={() => console.log('Download clicked')}
-              globalProfit={{}}
-              onGlobalProfitChange={() => {}}
             />
           </div>
 
-          {/* Editor */}
           <div className="col-span-9">
             {selectedCharterIndex >= 0 ? (
               <PriceEditor
                 charters={charters}
                 selectedDestination={selectedDestination}
                 selectedCharterIndex={selectedCharterIndex}
+                globalProfit={globalProfit}
               />
             ) : (
               <div className="bg-gray-800 p-6 rounded-lg text-center">
@@ -95,9 +120,7 @@ export default function PriceManagementPage() {
           </div>
         </div>
 
-        {/* Price Sheet Preview */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Price Sheet Preview</h2>
+        <div className="mt-6">
           <PriceSheet
             charters={charters}
             selectedDestination={selectedDestination}

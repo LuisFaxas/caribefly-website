@@ -1,10 +1,10 @@
 // src/components/sheets/PriceSheet.tsx
 
-import React from 'react'
-import type { CharterData } from '@/app/types/charter'
+import React, { useMemo } from 'react'
+import type { CharterData } from '@/types/charter'
 import { airportNames } from '@/app/data/airportCodes'
 import { FaPhone, FaEnvelope, FaWhatsapp } from 'react-icons/fa'
-import PriceDisplay from '@/app/components/ui/PriceDisplay'
+import { PriceDisplay } from '@/app/components/ui'
 
 interface PriceSheetProps {
   charters: CharterData[]
@@ -14,7 +14,7 @@ interface PriceSheetProps {
 }
 
 const PriceSheet: React.FC<PriceSheetProps> = ({
-  charters,
+  charters = [], // Provide default empty array
   agencyLogo,
   promotionalImage,
   selectedDestination,
@@ -33,11 +33,15 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
   }
 
   // Filter charters that have the selected destination
-  const filteredCharters = charters.filter((charter) =>
-    charter.destinations.some(
-      (dest) => dest.destination === selectedDestination
+  const filteredCharters = useMemo(() => {
+    if (!charters?.length || !selectedDestination) return []
+    return charters.filter(
+      (charter) =>
+        charter?.destinations?.some?.(
+          (dest) => dest?.destination === selectedDestination
+        ) ?? false
     )
-  )
+  }, [charters, selectedDestination])
 
   return (
     <div className="w-[800px] bg-gradient-to-b from-gray-800 to-gray-900 p-4 text-white">
@@ -95,11 +99,11 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
 
       {/* Charters Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredCharters.length > 0 ? (
+        {filteredCharters?.length > 0 ? (
           filteredCharters.map((charter, index) => {
             // Get the destination data for the selected destination
-            const destinationData = charter.destinations.find(
-              (dest) => dest.destination === selectedDestination
+            const destinationData = charter?.destinations?.find?.(
+              (dest) => dest?.destination === selectedDestination
             )
 
             // Skip if the charter doesn't have data for the selected destination
@@ -124,7 +128,7 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
                       </div>
                     </div>
                     <div className="bg-gray-700/90 p-2 rounded-b">
-                      {destinationData.flightDays.map((day, idx) => (
+                      {destinationData?.flightDays?.map((day, idx) => (
                         <div
                           key={`${day}-${idx}`}
                           className="flex justify-between items-center py-1"
@@ -133,7 +137,7 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
                             {day || 'N/A'}
                           </span>
                           <span className="text-gray-300">
-                            {destinationData.flightTimes[idx] ? (
+                            {destinationData?.flightTimes?.[idx] ? (
                               <>
                                 Ida: {destinationData.flightTimes[idx].ida} /
                                 Regreso:{' '}
@@ -148,86 +152,55 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
                     </div>
                   </div>
 
-                  {/* Price Periods */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {destinationData.periods.map((period, idx) => (
-                      <PriceDisplay
-                        key={`${period.label}-${idx}`}
-                        period={period}
-                      />
-                    ))}
+                  {/* Baggage Info */}
+                  <div>
+                    <div className="bg-[#5C6C87] px-2 py-1 rounded-t text-center">
+                      <div className="text-yellow-400 text-xs font-medium">
+                        Equipaje
+                      </div>
+                    </div>
+                    <div className="bg-gray-700/90 p-2 rounded-b">
+                      {destinationData?.baggageInfo?.map((info, idx) => (
+                        <div key={`${info}-${idx}`} className="py-1">
+                          {info}
+                        </div>
+                      )) || (
+                        <div className="py-1">
+                          No hay información de equipaje
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Additional Info */}
-                  <div className="grid grid-cols-2 gap-4 text-xs mt-4">
-                    {/* Baggage Info */}
-                    {destinationData.baggageInfo &&
-                      destinationData.baggageInfo.length > 0 && (
-                        <div>
-                          <div className="text-yellow-400 font-medium mb-1">
-                            Equipaje:
-                          </div>
-                          {destinationData.baggageInfo.map((line, idx) => (
-                            <div
-                              key={`baggage-${idx}`}
-                              className="text-gray-300"
-                            >
-                              • {line}
-                            </div>
-                          ))}
+                  <div>
+                    <div className="bg-[#5C6C87] px-2 py-1 rounded-t text-center">
+                      <div className="text-yellow-400 text-xs font-medium">
+                        Información Adicional
+                      </div>
+                    </div>
+                    <div className="bg-gray-700/90 p-2 rounded-b">
+                      {destinationData?.additionalInfo?.map((info, idx) => (
+                        <div key={`${info}-${idx}`} className="py-1">
+                          {info}
                         </div>
+                      )) || (
+                        <div className="py-1">No hay información adicional</div>
                       )}
-
-                    {/* Important Info */}
-                    {destinationData.additionalInfo &&
-                      destinationData.additionalInfo.length > 0 && (
-                        <div>
-                          <div className="text-yellow-400 font-medium mb-1">
-                            Información Importante:
-                          </div>
-                          {destinationData.additionalInfo.map((info, idx) => (
-                            <div
-                              key={`info-${idx}`}
-                              className="flex items-start text-gray-300"
-                            >
-                              <span className="text-yellow-400 mr-1">•</span>
-                              <span>{info}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                    </div>
                   </div>
+
+                  {/* Price Display */}
+                  <PriceDisplay destinationData={destinationData} />
                 </div>
               </div>
             )
           })
         ) : (
           <div className="col-span-2 text-center text-gray-400 py-8">
-            No hay charters disponibles para el destino seleccionado.
+            No hay charters disponibles para este destino
           </div>
         )}
-
-        {/* Promotional Card */}
-        <div className="bg-gray-800/90 rounded-lg shadow-md overflow-hidden">
-          <div className="bg-blue-600 py-1 text-center font-bold">
-            CONTACTO Y SERVICIOS
-          </div>
-          {promotionalImage ? (
-            <img
-              src={promotionalImage}
-              alt="Promoción"
-              className="w-full h-48 object-cover rounded-b-lg"
-            />
-          ) : (
-            <div className="h-48 flex flex-col items-center justify-center text-gray-400 p-4">
-              <p className="text-center">
-                Imagen promocional recomendada
-                <br />
-                Dimensiones: 600px × 400px
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
