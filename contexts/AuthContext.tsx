@@ -29,16 +29,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        const tokenResult = await currentUser.getIdTokenResult()
-        const token = await currentUser.getIdToken()
+        try {
+          const tokenResult = await currentUser.getIdTokenResult()
+          const token = await currentUser.getIdToken()
 
-        setIsAdmin(!!tokenResult.claims.admin)
-        setUser(currentUser)
+          setIsAdmin(!!tokenResult.claims.admin)
+          setUser(currentUser)
 
-        setCookie(null, 'firebaseToken', token, {
-          maxAge: 30 * 24 * 60 * 60,
-          path: '/',
-        })
+          setCookie(null, 'firebaseToken', token, {
+            maxAge: 30 * 24 * 60 * 60,
+            path: '/',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+          })
+        } catch (error) {
+          console.error('Error getting token:', error)
+          setUser(null)
+          setIsAdmin(false)
+          destroyCookie(null, 'firebaseToken')
+        }
       } else {
         setUser(null)
         setIsAdmin(false)
@@ -55,8 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await auth.signOut()
       destroyCookie(null, 'firebaseToken')
       router.push('/')
+      router.refresh() // Force a refresh of the Next.js cache
     } catch (error) {
-      console.error('Sign out error:', error)
+      console.error('Error signing out:', error)
     }
   }
 
@@ -67,4 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

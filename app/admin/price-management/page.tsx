@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { db } from '@/lib/firebase'
-import { collection, onSnapshot } from 'firebase/firestore'
+import { db } from '@/lib/firebaseConfig'
+import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore'
 import { useAuth } from '@/contexts/AuthContext'
 import PriceEditor from './components/editors/PriceEditor'
 import EditorToolbar from './components/controls/EditorToolbar'
@@ -68,6 +68,61 @@ export default function PriceManagementPage() {
     setPromotionalImage(image)
   }
 
+  const handleSave = async () => {
+    try {
+      const chartersRef = collection(db, 'charters')
+      for (const charter of charters) {
+        const { id, ...charterData } = charter
+        await setDoc(doc(chartersRef, id), charterData)
+      }
+    } catch (error) {
+      console.error('Error saving charters:', error)
+    }
+  }
+
+  const handleDownload = () => {
+    try {
+      const dataStr = JSON.stringify({ charters, globalProfit }, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `charter-prices-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading data:', error)
+    }
+  }
+
+  const handleLoad = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        try {
+          const content = e.target?.result as string
+          const data = JSON.parse(content)
+          if (data.charters) {
+            setCharters(data.charters)
+          }
+          if (data.globalProfit) {
+            setGlobalProfit(data.globalProfit)
+          }
+        } catch (error) {
+          console.error('Error parsing file:', error)
+        }
+      }
+      reader.readAsText(file)
+    } catch (error) {
+      console.error('Error loading file:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -90,9 +145,9 @@ export default function PriceManagementPage() {
               globalProfit={globalProfit}
               onCharterUpdate={handleCharterUpdate}
               onGlobalProfitChange={handleGlobalProfitChange}
-              onDownload={() => {}}
-              onSave={() => {}}
-              onLoad={() => {}}
+              onDownload={handleDownload}
+              onSave={handleSave}
+              onLoad={handleLoad}
               onAgencyLogoChange={handleAgencyLogoChange}
               onPromotionalImageChange={handlePromotionalImageChange}
               selectedDestination={selectedDestination}

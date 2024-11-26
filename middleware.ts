@@ -3,7 +3,11 @@ import type { NextRequest } from 'next/server'
 
 // Define protected routes
 const routes = {
-  admin: ['/admin/dashboard', '/admin/charter-editor'],
+  admin: [
+    '/admin/dashboard',
+    '/admin/charter-editor',
+    '/admin/price-management',
+  ],
   auth: ['/admin/auth/login'],
   public: ['/'],
 }
@@ -18,12 +22,16 @@ export async function middleware(request: NextRequest) {
 
   // If no session and trying to access admin route
   if (!session && isAdminRoute) {
-    return NextResponse.redirect(new URL('/admin/auth/login', request.url))
+    const loginUrl = new URL('/admin/auth/login', request.url)
+    loginUrl.searchParams.set('from', path)
+    return NextResponse.redirect(loginUrl)
   }
 
   // If has session and trying to access auth routes
   if (session && isAuthRoute) {
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    const from = request.nextUrl.searchParams.get('from')
+    const redirectUrl = from || '/admin/dashboard'
+    return NextResponse.redirect(new URL(redirectUrl, request.url))
   }
 
   return NextResponse.next()

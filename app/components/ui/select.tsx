@@ -6,7 +6,7 @@ export interface SelectProps
   options?: { value: string; label: string }[]
 }
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, options = [], ...props }, ref) => {
     return (
       <select
@@ -27,3 +27,5 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   }
 )
 Select.displayName = 'Select'
+
+export default Select
