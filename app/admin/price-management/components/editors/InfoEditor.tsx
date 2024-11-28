@@ -3,28 +3,28 @@ import { Input, Button } from '@/app/components/ui'
 
 interface InfoEditorProps {
   info: string[]
-  onChange: (info: string[]) => void
+  onUpdate: (info: string[]) => void
   label?: string
 }
 
 const InfoEditor: React.FC<InfoEditorProps> = ({
   info,
-  onChange,
+  onUpdate,
   label = 'Additional Info',
 }) => {
   const handleAdd = () => {
-    onChange([...info, ''])
+    onUpdate([...info, ''])
   }
 
   const handleRemove = (index: number) => {
     const newInfo = info.filter((_, i) => i !== index)
-    onChange(newInfo)
+    onUpdate(newInfo)
   }
 
   const handleChange = (index: number, value: string) => {
     const newInfo = [...info]
     newInfo[index] = value
-    onChange(newInfo)
+    onUpdate(newInfo)
   }
 
   return (

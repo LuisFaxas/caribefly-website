@@ -2,35 +2,35 @@ import React from 'react'
 import { Input, Button } from '@/app/components/ui'
 
 interface BaggageInfoEditorProps {
-  baggageInfo: string[]
-  onChange: (info: string[]) => void
+  info: string[]
+  onUpdate: (info: string[]) => void
 }
 
 const BaggageInfoEditor: React.FC<BaggageInfoEditorProps> = ({
-  baggageInfo,
-  onChange,
+  info,
+  onUpdate,
 }) => {
   const handleAdd = () => {
-    onChange([...baggageInfo, ''])
+    onUpdate([...info, ''])
   }
 
   const handleRemove = (index: number) => {
-    const newInfo = baggageInfo.filter((_, i) => i !== index)
-    onChange(newInfo)
+    const newInfo = info.filter((_, i) => i !== index)
+    onUpdate(newInfo)
   }
 
   const handleChange = (index: number, value: string) => {
-    const newInfo = [...baggageInfo]
+    const newInfo = [...info]
     newInfo[index] = value
-    onChange(newInfo)
+    onUpdate(newInfo)
   }
 
   return (
     <div className="space-y-4">
-      {baggageInfo.map((info, index) => (
+      {info.map((item, index) => (
         <div key={index} className="flex gap-2">
           <Input
-            value={info}
+            value={item}
             onChange={(e) => handleChange(index, e.target.value)}
             placeholder="Enter baggage info"
             className="flex-1"

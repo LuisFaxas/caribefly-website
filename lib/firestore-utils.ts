@@ -27,6 +27,25 @@ export interface Charter {
   id: string
   title: string
   flights: Flight[]
+  destinations?: Destination[]
+  globalProfit?: GlobalProfit
+}
+
+export interface DestinationData {
+  // Add properties for DestinationData
+}
+
+export interface Destination {
+  // Add properties for Destination
+  periods?: Period[]
+}
+
+export interface GlobalProfit {
+  // Add properties for GlobalProfit
+}
+
+export interface Period {
+  // Add properties for Period
 }
 
 // Service operations
@@ -87,4 +106,94 @@ export const charterOperations = {
   async updateFlights(id: string, flights: Flight[]): Promise<void> {
     await updateDoc(doc(db, 'charters', id), { flights })
   },
+
+  async updateDestination(
+    charterId: string,
+    destinationIndex: number,
+    destinationData: Partial<DestinationData>
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const charterDoc = await getDoc(doc(db, 'charters', charterId))
+      if (!charterDoc.exists()) {
+        return { success: false, error: 'Charter not found' }
+      }
+
+      const charter = charterDoc.data() as Charter
+      if (!charter.destinations || !charter.destinations[destinationIndex]) {
+        return { success: false, error: 'Destination not found' }
+      }
+
+      // Validate destination data
+      const errors = validateDestination({
+        ...charter.destinations[destinationIndex],
+        ...destinationData,
+      })
+      if (errors.length > 0) {
+        return { success: false, error: errors[0].message }
+      }
+
+      // Update destination
+      charter.destinations[destinationIndex] = {
+        ...charter.destinations[destinationIndex],
+        ...destinationData,
+      }
+
+      await updateDoc(doc(db, 'charters', charterId), {
+        destinations: charter.destinations,
+      })
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating destination:', error)
+      return { success: false, error: 'Failed to update destination' }
+    }
+  },
+
+  async updateGlobalProfit(
+    charterId: string,
+    globalProfit: GlobalProfit
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      await updateDoc(doc(db, 'charters', charterId), { globalProfit })
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating global profit:', error)
+      return { success: false, error: 'Failed to update global profit' }
+    }
+  },
+
+  async updatePeriods(
+    charterId: string,
+    destinationIndex: number,
+    periods: Period[]
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const charterDoc = await getDoc(doc(db, 'charters', charterId))
+      if (!charterDoc.exists()) {
+        return { success: false, error: 'Charter not found' }
+      }
+
+      const charter = charterDoc.data() as Charter
+      if (!charter.destinations || !charter.destinations[destinationIndex]) {
+        return { success: false, error: 'Destination not found' }
+      }
+
+      // Update periods
+      charter.destinations[destinationIndex].periods = periods
+
+      await updateDoc(doc(db, 'charters', charterId), {
+        destinations: charter.destinations,
+      })
+      return { success: true }
+    } catch (error) {
+      console.error('Error updating periods:', error)
+      return { success: false, error: 'Failed to update periods' }
+    }
+  },
+}
+
+function validateDestination(
+  destination: DestinationData
+): { message: string }[] {
+  // Implement validation logic for DestinationData
+  return []
 }

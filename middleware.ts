@@ -7,6 +7,7 @@ const routes = {
     '/admin/dashboard',
     '/admin/charter-editor',
     '/admin/price-management',
+    '/api/admin',
   ],
   auth: ['/admin/auth/login'],
   public: ['/'],
@@ -22,6 +23,9 @@ export async function middleware(request: NextRequest) {
 
   // If no session and trying to access admin route
   if (!session && isAdminRoute) {
+    if (path.startsWith('/api/admin')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const loginUrl = new URL('/admin/auth/login', request.url)
     loginUrl.searchParams.set('from', path)
     return NextResponse.redirect(loginUrl)
@@ -38,5 +42,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/admin/:path*', '/api/admin/:path*'],
 }

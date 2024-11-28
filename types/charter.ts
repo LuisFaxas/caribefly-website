@@ -13,14 +13,18 @@ export interface FlightTime {
 /**
  * Period-specific pricing and information
  * @property label - Period description (e.g., "March 1-15", "Holiday Season")
+ * @property startDate - Start date in ISO format
+ * @property endDate - End date in ISO format
  * @property rt - Round trip base price in USD
  * @property ow - One way base price in USD
  * @property profitOverride - Optional profit overrides for this period
  */
-export interface PeriodData {
+export interface Period {
   label: string
-  rt?: number
-  ow?: number
+  startDate: string
+  endDate: string
+  rt: number
+  ow: number
   profitOverride?: {
     rt?: number
     ow?: number
@@ -40,7 +44,7 @@ export interface DestinationData {
   destination: string
   flightDays: string[]
   flightTimes: FlightTime[]
-  periods: PeriodData[]
+  periods: Period[]
   baggageInfo: string[]
   additionalInfo: string[]
 }

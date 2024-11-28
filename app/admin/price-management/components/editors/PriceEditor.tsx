@@ -3,16 +3,23 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, Input, Label, Button } from '@/app/components/ui'
 import TimeSelector from '../ui/TimeSelector'
-import type { CharterData, GlobalProfit } from '@/types/charter'
+import type { CharterData, GlobalProfit, Period } from '@/types/charter'
 import { FaTrash, FaPlus } from 'react-icons/fa'
 import BaggageInfoEditor from './BaggageInfoEditor'
 import InfoEditor from './InfoEditor'
+import {
+  validateDestination,
+  validateCharterData,
+  ValidationError,
+} from '../../utils/validation'
+import ErrorBoundary from '../ErrorBoundary'
 
 interface PriceEditorProps {
   charters: CharterData[]
   selectedDestination: string
   selectedCharterIndex: number
   globalProfit: GlobalProfit
+  onCharterUpdate?: (updatedCharters: CharterData[]) => void
 }
 
 const PriceEditor: React.FC<PriceEditorProps> = ({
@@ -20,18 +27,121 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   selectedDestination,
   selectedCharterIndex,
   globalProfit,
+  onCharterUpdate,
 }) => {
-  // Create a local copy for editing
+  // Local state
   const [localData, setLocalData] = useState<CharterData | null>(null)
+  const [errors, setErrors] = useState<ValidationError[]>([])
+  const [isEditing, setIsEditing] = useState(false)
 
   // Reset localData when selected charter changes
   useEffect(() => {
     if (selectedCharterIndex >= 0 && charters?.[selectedCharterIndex]) {
       setLocalData(charters[selectedCharterIndex])
+      setErrors([])
+      setIsEditing(false)
     } else {
       setLocalData(null)
+      setErrors([])
     }
   }, [charters, selectedCharterIndex])
+
+  // Get the current destination data
+  const destinationData = localData?.destinations?.find(
+    (dest) => dest.destination === selectedDestination
+  )
+
+  // Update parent component with changes
+  const updateParent = (updatedData: CharterData) => {
+    if (!onCharterUpdate) return
+
+    const updatedCharters = [...charters]
+    updatedCharters[selectedCharterIndex] = updatedData
+    onCharterUpdate(updatedCharters)
+  }
+
+  // Handle period changes
+  const handlePeriodChange = (
+    periodIndex: number,
+    field: keyof Period,
+    value: any
+  ) => {
+    if (!localData || !destinationData) return
+
+    const updatedData = { ...localData }
+    const destIndex = updatedData.destinations.findIndex(
+      (d) => d.destination === selectedDestination
+    )
+
+    if (destIndex === -1) return
+
+    const periods = [...updatedData.destinations[destIndex].periods]
+    periods[periodIndex] = {
+      ...periods[periodIndex],
+      [field]: value,
+    }
+
+    updatedData.destinations[destIndex].periods = periods
+
+    // Validate the updated data
+    const validationErrors = validateDestination(
+      updatedData.destinations[destIndex]
+    )
+    setErrors(validationErrors)
+
+    setLocalData(updatedData)
+    if (validationErrors.length === 0) {
+      updateParent(updatedData)
+    }
+  }
+
+  // Add new period
+  const handleAddPeriod = () => {
+    if (!localData || !destinationData) return
+
+    const updatedData = { ...localData }
+    const destIndex = updatedData.destinations.findIndex(
+      (d) => d.destination === selectedDestination
+    )
+
+    if (destIndex === -1) return
+
+    const newPeriod: Period = {
+      rt: 0,
+      ow: 0,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
+    }
+
+    updatedData.destinations[destIndex].periods = [
+      ...updatedData.destinations[destIndex].periods,
+      newPeriod,
+    ]
+
+    setLocalData(updatedData)
+    updateParent(updatedData)
+  }
+
+  // Remove period
+  const handleRemovePeriod = (periodIndex: number) => {
+    if (!localData || !destinationData) return
+
+    const updatedData = { ...localData }
+    const destIndex = updatedData.destinations.findIndex(
+      (d) => d.destination === selectedDestination
+    )
+
+    if (destIndex === -1) return
+
+    updatedData.destinations[destIndex].periods = updatedData.destinations[
+      destIndex
+    ].periods.filter((_, index) => index !== periodIndex)
+
+    setLocalData(updatedData)
+    updateParent(updatedData)
+  }
 
   if (!localData) {
     return (
@@ -45,329 +155,263 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     )
   }
 
-  // Get the current destination data
-  const destinationData = localData.destinations.find(
-    (dest) => dest.destination === selectedDestination
-  )
-
-  if (!destinationData) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-gray-500">
-            No data found for the selected destination
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  // Apply updates and notify parent
-  const applyUpdates = (updatedData: CharterData) => {
-    setLocalData(updatedData)
-    // onDestinationUpdate(updatedData);
-  }
-
-  // Flight Schedule Handlers
-  const handleFlightDayChange = (dayIndex: number, value: string) => {
-    const updatedData = { ...localData }
-    updatedData.flightDays = [...updatedData.flightDays]
-    updatedData.flightDays[dayIndex] = value
-    applyUpdates(updatedData)
-  }
-
-  const handleAddFlightTime = () => {
-    const updatedData = { ...localData }
-    updatedData.flightTimes = [
-      ...updatedData.flightTimes,
-      { ida: '00:00', regreso: '00:00' },
-    ]
-    updatedData.flightDays = [...updatedData.flightDays, '']
-    applyUpdates(updatedData)
-  }
-
-  const handleRemoveFlightTime = (index: number) => {
-    const updatedData = { ...localData }
-    updatedData.flightTimes = updatedData.flightTimes.filter(
-      (_, i) => i !== index
-    )
-    updatedData.flightDays = updatedData.flightDays.filter(
-      (_, i) => i !== index
-    )
-    applyUpdates(updatedData)
-  }
-
-  // Price Period Handlers
-  const handleAddPeriod = () => {
-    const updatedData = { ...localData }
-    updatedData.periods = [
-      ...updatedData.periods,
-      {
-        label: 'Nuevo Periodo',
-        rt: undefined,
-        ow: undefined,
-        profitOverride: {},
-      },
-    ]
-    applyUpdates(updatedData)
-  }
-
-  const handleRemovePeriod = (index: number) => {
-    const updatedData = { ...localData }
-    updatedData.periods = updatedData.periods.filter((_, i) => i !== index)
-    applyUpdates(updatedData)
-  }
-
-  const handlePeriodChange = (
-    periodIndex: number,
-    field: 'label' | 'rt' | 'ow',
-    value: string
-  ) => {
-    const updatedData = { ...localData }
-    updatedData.periods = updatedData.periods.map((period, idx) =>
-      idx === periodIndex
-        ? {
-            ...period,
-            [field]: field === 'label' ? value : parseFloat(value) || undefined,
-          }
-        : period
-    )
-    applyUpdates(updatedData)
-  }
-
-  const handleProfitOverrideChange = (
-    periodIndex: number,
-    field: 'rt' | 'ow',
-    value: string
-  ) => {
-    const updatedData = { ...localData }
-    updatedData.periods = updatedData.periods.map((period, idx) => {
-      if (idx === periodIndex) {
-        const profitOverride = {
-          ...period.profitOverride,
-          [field]: parseFloat(value) || undefined,
-        }
-        return { ...period, profitOverride }
-      }
-      return period
-    })
-    applyUpdates(updatedData)
-  }
-
-  // Baggage Info Update Handler
-  const handleBaggageInfoUpdate = (newInfo: string[]) => {
-    const updatedData = { ...localData, baggageInfo: newInfo }
-    applyUpdates(updatedData)
-  }
-
-  // Additional Info Update Handler
-  const handleAdditionalInfoUpdate = (newInfo: string[]) => {
-    const updatedData = { ...localData, additionalInfo: newInfo }
-    applyUpdates(updatedData)
-  }
-
-  // Flight Time Handlers
-  const handleFlightTimeChange = (
-    index: number,
-    type: 'ida' | 'regreso',
-    newTime: string
-  ) => {
-    const updatedData = { ...localData }
-    updatedData.flightTimes = updatedData.flightTimes.map((time, idx) =>
-      idx === index ? { ...time, [type]: newTime } : time
-    )
-    applyUpdates(updatedData)
-  }
-
   return (
-    <div className="bg-gray-700 p-4 rounded-lg space-y-6">
-      <h2 className="text-xl font-semibold text-white mb-4">
-        Editor de {selectedDestination}
-      </h2>
-
-      {/* Flight Schedule Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Label className="text-lg font-semibold text-white">
-            Horarios de Vuelo
-          </Label>
-          <Button
-            onClick={handleAddFlightTime}
-            variant="outline"
-            size="sm"
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            <FaPlus className="mr-2" />
-            Agregar Horario
-          </Button>
-        </div>
-
-        {localData.flightTimes.map((time, index) => (
-          <Card key={index} className="bg-gray-800 border-gray-600">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <Label className="text-md font-medium text-white">
-                  Horario {index + 1}
-                </Label>
-                <Button
-                  onClick={() => handleRemoveFlightTime(index)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                >
-                  <FaTrash className="mr-2" />
-                  Eliminar
-                </Button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-white">Día de Vuelo</Label>
-                  <Input
-                    value={localData.flightDays[index] || ''}
-                    onChange={(e) =>
-                      handleFlightDayChange(index, e.target.value)
-                    }
-                    placeholder="Ej: Lunes y Jueves"
-                    className="mt-1 bg-gray-700 text-white border-gray-600"
-                  />
-                </div>
-
-                <TimeSelector
-                  label="Horarios"
-                  idaValue={time.ida}
-                  regresoValue={time.regreso}
-                  onIdaChange={(newTime) =>
-                    handleFlightTimeChange(index, 'ida', newTime)
-                  }
-                  onRegresoChange={(newTime) =>
-                    handleFlightTimeChange(index, 'regreso', newTime)
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Price Periods Section */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Label className="text-lg font-semibold text-white">
-            Periodos de Precios
-          </Label>
-          <Button
-            onClick={handleAddPeriod}
-            variant="outline"
-            size="sm"
-            className="bg-green-500 hover:bg-green-600 text-white"
-          >
-            <FaPlus className="mr-2" />
-            Agregar Periodo
-          </Button>
-        </div>
-
-        {localData.periods.map((period, index) => (
-          <Card key={index} className="bg-gray-800 border-gray-600">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-4">
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Charter Info */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Charter Information</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="charterName">Charter Name</Label>
                 <Input
-                  value={period.label}
-                  onChange={(e) =>
-                    handlePeriodChange(index, 'label', e.target.value)
-                  }
-                  placeholder="Nombre del Periodo"
-                  className="flex-grow mr-2 bg-gray-700 text-white border-gray-600"
+                  id="charterName"
+                  value={localData.name}
+                  onChange={(e) => {
+                    const updatedData = { ...localData, name: e.target.value }
+                    setLocalData(updatedData)
+                    updateParent(updatedData)
+                  }}
                 />
-                <Button
-                  onClick={() => handleRemovePeriod(index)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                >
-                  <FaTrash className="mr-2" />
-                  Eliminar
-                </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Base Prices */}
-                <div className="space-y-2">
-                  <Label className="text-white">Precio Base R/T</Label>
-                  <Input
-                    type="number"
-                    value={period.rt ?? ''}
-                    onChange={(e) =>
-                      handlePeriodChange(index, 'rt', e.target.value)
+        {/* Destination Info */}
+        {destinationData && (
+          <>
+            {/* Flight Schedule */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Flight Schedule</h3>
+                <TimeSelector
+                  days={destinationData.flightDays}
+                  times={destinationData.flightTimes}
+                  onUpdate={(days, times) => {
+                    const updatedData = { ...localData }
+                    const destIndex = updatedData.destinations.findIndex(
+                      (d) => d.destination === selectedDestination
+                    )
+                    if (destIndex !== -1) {
+                      updatedData.destinations[destIndex].flightDays = days
+                      updatedData.destinations[destIndex].flightTimes = times
+                      setLocalData(updatedData)
+                      updateParent(updatedData)
                     }
-                    placeholder="Precio R/T"
-                    className="bg-gray-700 text-white border-gray-600"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-white">Precio Base O/W</Label>
-                  <Input
-                    type="number"
-                    value={period.ow ?? ''}
-                    onChange={(e) =>
-                      handlePeriodChange(index, 'ow', e.target.value)
-                    }
-                    placeholder="Precio O/W"
-                    className="bg-gray-700 text-white border-gray-600"
-                    min="0"
-                    step="0.01"
-                  />
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Periods */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Price Periods</h3>
+                  <Button
+                    variant="secondary"
+                    onClick={handleAddPeriod}
+                    className="flex items-center gap-2"
+                  >
+                    <FaPlus className="w-4 h-4" />
+                    Add Period
+                  </Button>
                 </div>
 
-                {/* Profit Overrides */}
-                <div className="space-y-2">
-                  <Label className="text-white">Ganancia R/T (Override)</Label>
-                  <Input
-                    type="number"
-                    value={period.profitOverride?.rt ?? ''}
-                    onChange={(e) =>
-                      handleProfitOverrideChange(index, 'rt', e.target.value)
-                    }
-                    placeholder={`Global: +$${0}`}
-                    className="bg-gray-700 text-white border-gray-600"
-                    min="0"
-                    step="0.01"
+                <div className="space-y-4">
+                  {destinationData.periods.map((period, index) => (
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 space-y-4 relative"
+                    >
+                      <button
+                        onClick={() => handleRemovePeriod(index)}
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                      >
+                        <FaTrash className="w-4 h-4" />
+                      </button>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`period-${index}-start`}>
+                            Start Date
+                          </Label>
+                          <Input
+                            type="date"
+                            id={`period-${index}-start`}
+                            value={period.startDate}
+                            onChange={(e) =>
+                              handlePeriodChange(
+                                index,
+                                'startDate',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`period-${index}-end`}>
+                            End Date
+                          </Label>
+                          <Input
+                            type="date"
+                            id={`period-${index}-end`}
+                            value={period.endDate}
+                            onChange={(e) =>
+                              handlePeriodChange(
+                                index,
+                                'endDate',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`period-${index}-rt`}>
+                            Round Trip Price
+                          </Label>
+                          <Input
+                            type="number"
+                            id={`period-${index}-rt`}
+                            value={period.rt}
+                            onChange={(e) =>
+                              handlePeriodChange(
+                                index,
+                                'rt',
+                                parseFloat(e.target.value)
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`period-${index}-ow`}>
+                            One Way Price
+                          </Label>
+                          <Input
+                            type="number"
+                            id={`period-${index}-ow`}
+                            value={period.ow}
+                            onChange={(e) =>
+                              handlePeriodChange(
+                                index,
+                                'ow',
+                                parseFloat(e.target.value)
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {/* Profit Override */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`period-${index}-profit-rt`}>
+                            RT Profit Override (Optional)
+                          </Label>
+                          <Input
+                            type="number"
+                            id={`period-${index}-profit-rt`}
+                            value={period.profitOverride?.rt ?? ''}
+                            placeholder={`Default: ${globalProfit.rt}%`}
+                            onChange={(e) =>
+                              handlePeriodChange(index, 'profitOverride', {
+                                ...period.profitOverride,
+                                rt: parseFloat(e.target.value),
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`period-${index}-profit-ow`}>
+                            OW Profit Override (Optional)
+                          </Label>
+                          <Input
+                            type="number"
+                            id={`period-${index}-profit-ow`}
+                            value={period.profitOverride?.ow ?? ''}
+                            placeholder={`Default: ${globalProfit.ow}%`}
+                            onChange={(e) =>
+                              handlePeriodChange(index, 'profitOverride', {
+                                ...period.profitOverride,
+                                ow: parseFloat(e.target.value),
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Additional Info */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Additional Information
+                </h3>
+                <div className="space-y-6">
+                  <BaggageInfoEditor
+                    info={destinationData.baggageInfo}
+                    onUpdate={(info) => {
+                      const updatedData = { ...localData }
+                      const destIndex = updatedData.destinations.findIndex(
+                        (d) => d.destination === selectedDestination
+                      )
+                      if (destIndex !== -1) {
+                        updatedData.destinations[destIndex].baggageInfo = info
+                        setLocalData(updatedData)
+                        updateParent(updatedData)
+                      }
+                    }}
+                  />
+                  <InfoEditor
+                    info={destinationData.additionalInfo}
+                    label="Additional Info"
+                    onUpdate={(info) => {
+                      const updatedData = { ...localData }
+                      const destIndex = updatedData.destinations.findIndex(
+                        (d) => d.destination === selectedDestination
+                      )
+                      if (destIndex !== -1) {
+                        updatedData.destinations[destIndex].additionalInfo =
+                          info
+                        setLocalData(updatedData)
+                        updateParent(updatedData)
+                      }
+                    }}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-white">Ganancia O/W (Override)</Label>
-                  <Input
-                    type="number"
-                    value={period.profitOverride?.ow ?? ''}
-                    onChange={(e) =>
-                      handleProfitOverrideChange(index, 'ow', e.target.value)
-                    }
-                    placeholder={`Global: +$${0}`}
-                    className="bg-gray-700 text-white border-gray-600"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Validation Errors */}
+        {errors.length > 0 && (
+          <Card className="border-destructive">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-destructive mb-2">
+                Validation Errors
+              </h3>
+              <ul className="list-disc list-inside space-y-1">
+                {errors.map((error, index) => (
+                  <li key={index} className="text-sm text-destructive">
+                    {error.message}
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
-        ))}
+        )}
       </div>
-
-      {/* Baggage Information Section */}
-      <BaggageInfoEditor
-        destinationData={localData}
-        onBaggageInfoUpdate={handleBaggageInfoUpdate}
-      />
-
-      {/* Additional Information Section */}
-      <InfoEditor
-        destinationData={localData}
-        onInfoUpdate={handleAdditionalInfoUpdate}
-      />
-    </div>
+    </ErrorBoundary>
   )
 }
 
