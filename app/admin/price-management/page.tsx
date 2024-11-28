@@ -3,22 +3,49 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebaseConfig'
-import { collection, onSnapshot, setDoc, doc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { useAuth } from '@/contexts/AuthContext'
 import PriceEditor from './components/editors/PriceEditor'
 import EditorToolbar from './components/controls/EditorToolbar'
 import PriceSheet from './components/sheets/PriceSheet'
 import LoadingState from './components/controls/LoadingState'
 import ErrorBoundary from './components/controls/ErrorBoundary'
-import type { CharterData, GlobalProfit } from '@/types/charter'
+import type { CharterData, GlobalProfit, StorageData } from '@/types/charter'
+import { cubanAirports, floridaAirports } from '@/data/airportCodes'
 import toast from 'react-hot-toast'
+
+// Initialize new charter data with all routes
+const initializeNewCharter = (name: string): CharterData => {
+  const routes = floridaAirports.flatMap(from => 
+    cubanAirports.map(to => `${from}-${to}`)
+  )
+  
+  return {
+    name,
+    destinations: routes.map(route => ({
+      destination: route,
+      flightDays: ['Monday', 'Wednesday', 'Friday'],
+      flightTimes: [{ ida: '10:00', regreso: '13:00' }],
+      periods: [{
+        label: 'Regular Season',
+        startDate: new Date().toISOString(),
+        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+        rt: 299,
+        ow: 199
+      }],
+      baggageInfo: ['1 carry-on included', '1 checked bag included'],
+      additionalInfo: ['Valid for 6 months', 'Subject to availability']
+    }))
+  }
+}
 
 export default function PriceManagementPage() {
   const { user, isAdmin } = useAuth()
   const router = useRouter()
 
+  // Initialize state
   const [charters, setCharters] = useState<CharterData[]>([])
-  const [selectedDestination, setSelectedDestination] = useState<string>('MIA-HAV')
+  const [selectedDestination, setSelectedDestination] = useState<string>('')
   const [selectedCharterIndex, setSelectedCharterIndex] = useState<number>(-1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -41,25 +68,38 @@ export default function PriceManagementPage() {
 
     try {
       const unsubscribe = onSnapshot(
-        collection(db, 'charters'),
+        doc(db, 'charters', user.uid),
         (snapshot) => {
-          const data = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          })) as CharterData[]
-          setCharters(data)
-          setLoading(false)
+          if (snapshot.exists()) {
+            const data = snapshot.data() as StorageData
+            setCharters(data.charters || [initializeNewCharter('Charter sin nombre')])
+            setGlobalProfit(data.globalProfit || { rt: 20, ow: 20 })
+            setAgencyLogo(data.agencyLogo || '')
+            setPromotionalImage(data.promotionalImage || '')
+            
+            // Set destination only if we have charters
+            if (data.charters?.length > 0 && data.charters[0].destinations?.length > 0) {
+              setSelectedDestination(data.charters[0].destinations[0].destination)
+              setSelectedCharterIndex(0)
+            }
+            setLoading(false)
+          } else {
+            // Initialize with default data if no document exists
+            const defaultCharter = initializeNewCharter('Charter sin nombre')
+            setCharters([defaultCharter])
+            setSelectedDestination(defaultCharter.destinations[0].destination)
+            setSelectedCharterIndex(0)
+            setLoading(false)
+          }
         },
-        (err) => {
-          console.error('Error loading charters:', err)
-          setError('Failed to load charter data')
+        (error) => {
+          console.error('Error loading charter data:', error)
+          setError('Error loading charter data. Please try refreshing the page.')
           setLoading(false)
         }
       )
 
-      return () => {
-        unsubscribe()
-      }
+      return () => unsubscribe()
     } catch (err) {
       console.error('Error setting up charter listener:', err)
       setError('Failed to initialize charter management')
@@ -72,125 +112,30 @@ export default function PriceManagementPage() {
     setSelectedCharterIndex(-1)
   }, [selectedDestination])
 
-  // Data management handlers
+  // Handlers
   const handleSave = async () => {
     if (!user) return
 
     try {
+      setLoading(true)
       const charterRef = doc(db, 'charters', user.uid)
-      await setDoc(charterRef, { charters, globalProfit }, { merge: true })
+      const dataToSave: StorageData = {
+        charters,
+        globalProfit,
+        agencyLogo,
+        promotionalImage,
+        lastUpdated: new Date().toISOString(),
+        selectedDestination,
+        selectedCharterIndex
+      }
+      
+      await setDoc(charterRef, dataToSave, { merge: true })
       toast.success('Changes saved successfully')
     } catch (error) {
       console.error('Error saving changes:', error)
       toast.error('Failed to save changes')
-    }
-  }
-
-  const handleLoad = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    try {
-      const text = await file.text()
-      const data = JSON.parse(text)
-
-      if (!data.charters || !Array.isArray(data.charters)) {
-        throw new Error('Invalid file format: missing or invalid charters data')
-      }
-
-      setCharters(data.charters)
-      
-      if (data.globalProfit?.rt && data.globalProfit?.ow) {
-        setGlobalProfit(data.globalProfit)
-      }
-      
-      toast.success('Data loaded successfully')
-    } catch (error) {
-      console.error('Error loading file:', error)
-      toast.error('Failed to load file: ' + (error as Error).message)
-    }
-  }
-
-  const handleDownload = async () => {
-    try {
-      const data = {
-        charters,
-        globalProfit,
-        timestamp: new Date().toISOString(),
-      }
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      })
-      const url = URL.createObjectURL(blob)
-
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `charter-prices-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      toast.success('File downloaded successfully')
-    } catch (error) {
-      console.error('Error downloading file:', error)
-      toast.error('Failed to download file')
-    }
-  }
-
-  // Update handlers
-  const handleCharterUpdate = (updatedCharters: CharterData[]) => {
-    setCharters(updatedCharters)
-  }
-
-  const handleGlobalProfitChange = (profit: GlobalProfit) => {
-    setGlobalProfit(profit)
-  }
-
-  // File upload handlers
-  const handleFileUpload = async (
-    file: File,
-    setter: (value: string) => void
-  ) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Only image files are allowed')
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size must be less than 5MB')
-      return
-    }
-
-    try {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setter(reader.result as string)
-      }
-      reader.onerror = () => {
-        toast.error('Failed to read file')
-      }
-      reader.readAsDataURL(file)
-    } catch (error) {
-      console.error('Error uploading file:', error)
-      toast.error('Failed to upload file')
-    }
-  }
-
-  const handleAgencyLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      handleFileUpload(file, setAgencyLogo)
-    }
-  }
-
-  const handlePromotionalImageChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      handleFileUpload(file, setPromotionalImage)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -203,14 +148,11 @@ export default function PriceManagementPage() {
           </div>
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-3">
-              <LoadingState type="editor" />
+              <LoadingState />
             </div>
             <div className="col-span-9">
-              <LoadingState type="editor" />
+              <LoadingState />
             </div>
-          </div>
-          <div className="mt-6">
-            <LoadingState type="sheet" />
           </div>
         </div>
       </div>
@@ -243,35 +185,45 @@ export default function PriceManagementPage() {
           <h1 className="text-2xl font-bold">Charter Price Management</h1>
         </div>
 
-        <ErrorBoundary>
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-3">
+        <div className="grid grid-cols-12 gap-6">
+          {/* Left Sidebar - Toolbar */}
+          <div className="col-span-3 space-y-6">
+            <ErrorBoundary>
               <EditorToolbar
                 charters={charters}
                 globalProfit={globalProfit}
-                onCharterUpdate={handleCharterUpdate}
-                onGlobalProfitChange={handleGlobalProfitChange}
-                onDownload={handleDownload}
+                onCharterUpdate={setCharters}
+                onGlobalProfitChange={setGlobalProfit}
+                onDownload={() => {}}
                 onSave={handleSave}
-                onLoad={handleLoad}
-                onAgencyLogoChange={handleAgencyLogoChange}
-                onPromotionalImageChange={handlePromotionalImageChange}
+                onLoad={() => {}}
+                onAgencyLogoChange={setAgencyLogo}
+                onPromotionalImageChange={setPromotionalImage}
                 selectedDestination={selectedDestination}
                 onDestinationChange={setSelectedDestination}
                 selectedCharterIndex={selectedCharterIndex}
                 onSelectCharter={setSelectedCharterIndex}
               />
-            </div>
+            </ErrorBoundary>
+          </div>
 
-            <div className="col-span-9">
+          {/* Right Content Area */}
+          <div className="col-span-9 space-y-6">
+            {/* Editor Section */}
+            <ErrorBoundary>
               {selectedCharterIndex >= 0 ? (
-                <PriceEditor
-                  charters={charters}
-                  selectedDestination={selectedDestination}
-                  selectedCharterIndex={selectedCharterIndex}
-                  globalProfit={globalProfit}
-                  onCharterUpdate={handleCharterUpdate}
-                />
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <PriceEditor
+                    charter={charters[selectedCharterIndex]}
+                    selectedDestination={selectedDestination}
+                    globalProfit={globalProfit}
+                    onUpdate={(updatedCharter) => {
+                      const newCharters = [...charters]
+                      newCharters[selectedCharterIndex] = updatedCharter
+                      setCharters(newCharters)
+                    }}
+                  />
+                </div>
               ) : (
                 <div className="bg-gray-800 p-6 rounded-lg text-center">
                   <p className="text-gray-400">
@@ -279,19 +231,22 @@ export default function PriceManagementPage() {
                   </p>
                 </div>
               )}
-            </div>
-          </div>
+            </ErrorBoundary>
 
-          <div className="mt-6">
-            <PriceSheet
-              charters={charters}
-              selectedDestination={selectedDestination}
-              agencyLogo={agencyLogo}
-              promotionalImage={promotionalImage}
-              isLoading={loading}
-            />
+            {/* Price Sheet Section */}
+            <ErrorBoundary>
+              <div className="bg-gray-800 rounded-lg p-6">
+                <PriceSheet
+                  charters={charters}
+                  selectedDestination={selectedDestination}
+                  globalProfit={globalProfit}
+                  agencyLogo={agencyLogo}
+                  promotionalImage={promotionalImage}
+                />
+              </div>
+            </ErrorBoundary>
           </div>
-        </ErrorBoundary>
+        </div>
       </div>
     </div>
   )
