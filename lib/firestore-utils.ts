@@ -48,6 +48,34 @@ export interface Period {
   // Add properties for Period
 }
 
+export interface StorageData {
+  charters: CharterData[]
+  globalProfit: { rt: number; ow: number }
+  agencyLogo: string
+  promotionalImage: string
+  lastUpdated: string
+  selectedDestination: string
+  selectedCharterIndex: number
+}
+
+export interface CharterData {
+  name: string
+  destinations: {
+    destination: string
+    flightDays: string[]
+    flightTimes: { ida: string; regreso: string }[]
+    periods: {
+      label: string
+      startDate: string
+      endDate: string
+      rt: number
+      ow: number
+    }[]
+    baggageInfo: string[]
+    additionalInfo: string[]
+  }[]
+}
+
 // Service operations
 export const serviceOperations = {
   async getAll(): Promise<Service[]> {
@@ -196,4 +224,99 @@ function validateDestination(
 ): { message: string }[] {
   // Implement validation logic for DestinationData
   return []
+}
+
+// Initialize default charter data
+export const initializeDefaultCharter = (name: string): CharterData => {
+  return {
+    name,
+    destinations: defaultRoutes.map((route) => ({
+      destination: route,
+      flightDays: ['Monday', 'Wednesday', 'Friday'],
+      flightTimes: [{ ida: '10:00', regreso: '13:00' }],
+      periods: [
+        {
+          label: 'Regular Season',
+          startDate: new Date().toISOString(),
+          endDate: new Date(
+            new Date().setMonth(new Date().getMonth() + 1)
+          ).toISOString(),
+          rt: 299,
+          ow: 199,
+        },
+      ],
+      baggageInfo: ['1 carry-on included', '1 checked bag included'],
+      additionalInfo: ['Valid for 6 months', 'Subject to availability'],
+    })),
+  }
+}
+
+// Get charter data for a user
+export const getCharterData = async (userId: string): Promise<StorageData> => {
+  try {
+    const docRef = doc(db, 'charters', userId)
+    const docSnap = await getDoc(docRef)
+
+    if (docSnap.exists()) {
+      return docSnap.data() as StorageData
+    }
+
+    // Return default data if none exists
+    return {
+      charters: [initializeDefaultCharter('Charter sin nombre')],
+      globalProfit: { rt: 20, ow: 20 },
+      agencyLogo: '',
+      promotionalImage: '',
+      lastUpdated: new Date().toISOString(),
+      selectedDestination: defaultRoutes[0],
+      selectedCharterIndex: -1,
+    }
+  } catch (error) {
+    console.error('Error getting charter data:', error)
+    throw error
+  }
+}
+
+// Save charter data for a user
+export const saveCharterData = async (
+  userId: string,
+  data: StorageData
+): Promise<void> => {
+  try {
+    const docRef = doc(db, 'charters', userId)
+    await setDoc(
+      docRef,
+      {
+        ...data,
+        lastUpdated: new Date().toISOString(),
+      },
+      { merge: true }
+    )
+  } catch (error) {
+    console.error('Error saving charter data:', error)
+    throw error
+  }
+}
+
+// Validate charter data structure
+export const validateCharterData = (data: any): boolean => {
+  if (!data || typeof data !== 'object') return false
+  if (!Array.isArray(data.charters)) return false
+  if (!data.globalProfit || typeof data.globalProfit !== 'object') return false
+
+  // Validate each charter
+  return data.charters.every((charter: any) => {
+    if (!charter.name || typeof charter.name !== 'string') return false
+    if (!Array.isArray(charter.destinations)) return false
+
+    // Validate each destination
+    return charter.destinations.every((dest: any) => {
+      if (!dest.destination || !defaultRoutes.includes(dest.destination))
+        return false
+      if (!Array.isArray(dest.flightDays)) return false
+      if (!Array.isArray(dest.flightTimes)) return false
+      if (!Array.isArray(dest.periods)) return false
+      return true
+    })
+  })
 }

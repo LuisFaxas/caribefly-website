@@ -3,39 +3,65 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { db } from '@/lib/firebaseConfig'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, collection, getDocs } from 'firebase/firestore'
 import { useAuth } from '@/contexts/AuthContext'
 import PriceEditor from './components/editors/PriceEditor'
 import EditorToolbar from './components/controls/EditorToolbar'
 import PriceSheet from './components/sheets/PriceSheet'
 import LoadingState from './components/controls/LoadingState'
 import ErrorBoundary from './components/controls/ErrorBoundary'
-import type { CharterData, GlobalProfit, StorageData } from '@/types/charter'
+import type {
+  CharterData,
+  DestinationData,
+  GlobalProfit,
+  StorageData,
+} from '@/types/charter'
 import { cubanAirports, floridaAirports } from '@/data/airportCodes'
 import toast from 'react-hot-toast'
+import crypto from 'crypto'
 
 // Initialize new charter data with all routes
 const initializeNewCharter = (name: string): CharterData => {
-  const routes = floridaAirports.flatMap(from => 
-    cubanAirports.map(to => `${from}-${to}`)
+  const routes = floridaAirports.flatMap((from) =>
+    cubanAirports.map((to) => `${from}-${to}`)
   )
-  
+
+  const today = new Date()
+  const nextMonth = new Date(today)
+  nextMonth.setMonth(today.getMonth() + 1)
+
   return {
+    id: crypto.randomUUID(),
     name,
-    destinations: routes.map(route => ({
+    destinations: routes.map((route) => ({
       destination: route,
-      flightDays: ['Monday', 'Wednesday', 'Friday'],
+      flightDays: ['Lunes', 'Miércoles', 'Viernes'],
       flightTimes: [{ ida: '10:00', regreso: '13:00' }],
-      periods: [{
-        label: 'Regular Season',
-        startDate: new Date().toISOString(),
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-        rt: 299,
-        ow: 199
-      }],
-      baggageInfo: ['1 carry-on included', '1 checked bag included'],
-      additionalInfo: ['Valid for 6 months', 'Subject to availability']
-    }))
+      periods: [
+        {
+          label: 'Temporada Regular',
+          startDate: today.toISOString(),
+          endDate: nextMonth.toISOString(),
+          rt: 299,
+          ow: 199,
+        },
+      ],
+      baggageInfo: [
+        'Equipaje de mano incluido',
+        'Primera maleta: $1.40/lb',
+        'Maletas adicionales: $2.70/lb',
+      ],
+      additionalInfo: [
+        'Impuestos USA incluidos',
+        'Tasa de salida: $27',
+        'Tasa sanitaria: $35',
+        'Cargo por reserva: $9',
+      ],
+    })),
+    globalProfit: {
+      rt: 40,
+      ow: 30,
+    },
   }
 }
 
@@ -45,16 +71,46 @@ export default function PriceManagementPage() {
 
   // Initialize state
   const [charters, setCharters] = useState<CharterData[]>([])
-  const [selectedDestination, setSelectedDestination] = useState<string>('')
   const [selectedCharterIndex, setSelectedCharterIndex] = useState<number>(-1)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedDestination, setSelectedDestination] = useState<string>('')
+  const [globalProfit, setGlobalProfit] = useState<GlobalProfit>({
+    rt: 40,
+    ow: 30,
+  })
   const [agencyLogo, setAgencyLogo] = useState<string>('')
   const [promotionalImage, setPromotionalImage] = useState<string>('')
-  const [globalProfit, setGlobalProfit] = useState<GlobalProfit>({
-    rt: 20,
-    ow: 20,
-  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Load charters from Firestore
+  useEffect(() => {
+    const loadCharters = async () => {
+      try {
+        const chartersRef = collection(db, 'charters')
+        const snapshot = await getDocs(chartersRef)
+        const loadedCharters = snapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as CharterData)
+        )
+        setCharters(loadedCharters)
+        
+        // Set initial selection if charters exist
+        if (loadedCharters.length > 0) {
+          setSelectedCharterIndex(0)
+          const firstCharter = loadedCharters[0]
+          if (firstCharter.destinations?.length > 0) {
+            setSelectedDestination(firstCharter.destinations[0].destination)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading charters:', error)
+        toast.error('Error loading charters')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadCharters()
+  }, [])
 
   // Authentication and data loading
   useEffect(() => {
@@ -63,54 +119,78 @@ export default function PriceManagementPage() {
       return
     }
 
-    setLoading(true)
-    setError(null)
-
     try {
       const unsubscribe = onSnapshot(
         doc(db, 'charters', user.uid),
         (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.data() as StorageData
-            setCharters(data.charters || [initializeNewCharter('Charter sin nombre')])
-            setGlobalProfit(data.globalProfit || { rt: 20, ow: 20 })
+            const charterData = data.charters || [initializeNewCharter('Enjoy')]
+            setCharters(charterData)
+            setGlobalProfit(data.globalProfit || { rt: 40, ow: 30 })
             setAgencyLogo(data.agencyLogo || '')
             setPromotionalImage(data.promotionalImage || '')
-            
-            // Set destination only if we have charters
-            if (data.charters?.length > 0 && data.charters[0].destinations?.length > 0) {
-              setSelectedDestination(data.charters[0].destinations[0].destination)
+
+            // Always ensure we have a valid selected destination
+            if (
+              charterData.length > 0 &&
+              charterData[0].destinations?.length > 0
+            ) {
+              setSelectedDestination(charterData[0].destinations[0].destination)
               setSelectedCharterIndex(0)
             }
-            setLoading(false)
           } else {
             // Initialize with default data if no document exists
-            const defaultCharter = initializeNewCharter('Charter sin nombre')
+            const defaultCharter = initializeNewCharter('Enjoy')
+            const defaultData = {
+              charters: [defaultCharter],
+              globalProfit: { rt: 40, ow: 30 },
+              agencyLogo: '',
+              promotionalImage: '',
+            }
+
+            // Save default data to Firestore
+            setDoc(doc(db, 'charters', user.uid), defaultData).catch(
+              (error) => {
+                console.error('Error saving default charter data:', error)
+                toast.error('Error saving default data')
+              }
+            )
+
             setCharters([defaultCharter])
             setSelectedDestination(defaultCharter.destinations[0].destination)
             setSelectedCharterIndex(0)
-            setLoading(false)
           }
         },
         (error) => {
           console.error('Error loading charter data:', error)
-          setError('Error loading charter data. Please try refreshing the page.')
-          setLoading(false)
+          setError(
+            'Error loading charter data. Please try refreshing the page.'
+          )
         }
       )
 
       return () => unsubscribe()
-    } catch (err) {
-      console.error('Error setting up charter listener:', err)
-      setError('Failed to initialize charter management')
-      setLoading(false)
+    } catch (error) {
+      console.error('Error setting up snapshot listener:', error)
+      setError(
+        'Error connecting to the database. Please try refreshing the page.'
+      )
     }
   }, [user, isAdmin, router])
 
-  // Reset selection when destination changes
+  // Reset selection when charters change
   useEffect(() => {
-    setSelectedCharterIndex(-1)
-  }, [selectedDestination])
+    if (!charters || !Array.isArray(charters)) return
+
+    if (charters.length > 0 && selectedCharterIndex === -1) {
+      setSelectedCharterIndex(0)
+      const firstCharter = charters[0]
+      if (firstCharter?.destinations?.length > 0) {
+        setSelectedDestination(firstCharter.destinations[0].destination)
+      }
+    }
+  }, [charters, selectedCharterIndex])
 
   // Handlers
   const handleSave = async () => {
@@ -125,11 +205,9 @@ export default function PriceManagementPage() {
         agencyLogo,
         promotionalImage,
         lastUpdated: new Date().toISOString(),
-        selectedDestination,
-        selectedCharterIndex
       }
-      
-      await setDoc(charterRef, dataToSave, { merge: true })
+
+      await setDoc(charterRef, dataToSave)
       toast.success('Changes saved successfully')
     } catch (error) {
       console.error('Error saving changes:', error)
@@ -137,6 +215,36 @@ export default function PriceManagementPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCharterUpdate = (updatedCharter: CharterData) => {
+    const newCharters = [...charters]
+    newCharters[selectedCharterIndex] = updatedCharter
+    setCharters(newCharters)
+  }
+
+  const handleDestinationUpdate = (updatedDestinationData: DestinationData) => {
+    if (selectedCharterIndex >= 0) {
+      const updatedCharter = { ...charters[selectedCharterIndex] }
+      const destinationIndex = updatedCharter.destinations.findIndex(
+        (d) => d.destination === selectedDestination
+      )
+
+      if (destinationIndex >= 0) {
+        updatedCharter.destinations[destinationIndex] = updatedDestinationData
+        handleCharterUpdate(updatedCharter)
+      }
+    }
+  }
+
+  const getCurrentDestinationData = () => {
+    if (selectedCharterIndex >= 0 && selectedDestination) {
+      const charter = charters[selectedCharterIndex]
+      return charter.destinations.find(
+        (d) => d.destination === selectedDestination
+      )
+    }
+    return null
   }
 
   if (loading) {
@@ -203,6 +311,8 @@ export default function PriceManagementPage() {
                 onDestinationChange={setSelectedDestination}
                 selectedCharterIndex={selectedCharterIndex}
                 onSelectCharter={setSelectedCharterIndex}
+                agencyLogo={agencyLogo}
+                promotionalImage={promotionalImage}
               />
             </ErrorBoundary>
           </div>
@@ -211,17 +321,14 @@ export default function PriceManagementPage() {
           <div className="col-span-9 space-y-6">
             {/* Editor Section */}
             <ErrorBoundary>
-              {selectedCharterIndex >= 0 ? (
+              {selectedCharterIndex >= 0 && getCurrentDestinationData() ? (
                 <div className="bg-gray-800 rounded-lg p-6">
                   <PriceEditor
                     charter={charters[selectedCharterIndex]}
                     selectedDestination={selectedDestination}
                     globalProfit={globalProfit}
-                    onUpdate={(updatedCharter) => {
-                      const newCharters = [...charters]
-                      newCharters[selectedCharterIndex] = updatedCharter
-                      setCharters(newCharters)
-                    }}
+                    onUpdate={handleCharterUpdate}
+                    onDestinationUpdate={handleDestinationUpdate}
                   />
                 </div>
               ) : (

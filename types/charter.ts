@@ -17,7 +17,6 @@ export interface FlightTime {
  * @property endDate - End date in ISO format
  * @property rt - Round trip base price in USD
  * @property ow - One way base price in USD
- * @property profitOverride - Optional profit overrides for this period
  */
 export interface Period {
   label: string
@@ -25,10 +24,6 @@ export interface Period {
   endDate: string
   rt: number
   ow: number
-  profitOverride?: {
-    rt?: number
-    ow?: number
-  }
 }
 
 /**
@@ -50,16 +45,6 @@ export interface DestinationData {
 }
 
 /**
- * Charter company information and routes
- * @property name - Charter company name
- * @property destinations - Available destinations and their details
- */
-export interface CharterData {
-  name: string
-  destinations: DestinationData[]
-}
-
-/**
  * Global profit settings
  * @property rt - Default round trip profit margin in USD
  * @property ow - Default one way profit margin in USD
@@ -70,23 +55,49 @@ export interface GlobalProfit {
 }
 
 /**
- * Editor storage data
- * @property charters - List of charter companies and their data
+ * Charter company information and routes
+ * @property id - Unique charter ID
+ * @property name - Charter company name
+ * @property destinations - Available destinations and their details
  * @property globalProfit - Default profit margins
- * @property agencyLogo - Base64 encoded agency logo
- * @property promotionalImage - Base64 encoded promotional image
- * @property lastUpdated - ISO date string of last update
- * @property selectedDestination - Currently selected destination
- * @property selectedCharterIndex - Index of selected charter
  */
-export interface StorageData {
-  charters: CharterData[]
+export interface CharterData {
+  id: string
+  name: string
+  destinations: DestinationData[]
   globalProfit: GlobalProfit
-  agencyLogo?: string
-  promotionalImage?: string
-  lastUpdated: string
-  selectedDestination: string
-  selectedCharterIndex: number
+}
+
+/**
+ * Charter update data
+ * @property name - Optional charter company name update
+ * @property destinations - Optional destination updates
+ * @property globalProfit - Optional global profit update
+ */
+export interface CharterUpdate {
+  name?: string
+  destinations?: Partial<DestinationData>[]
+  globalProfit?: GlobalProfit
+}
+
+/**
+ * Validation error data
+ * @property field - Field with error
+ * @property message - Error message
+ */
+export interface ValidationError {
+  field: string
+  message: string
+}
+
+/**
+ * Operation result data
+ * @property success - Whether operation was successful
+ * @property error - Optional error message
+ */
+export interface OperationResult {
+  success: boolean
+  error?: string
 }
 
 /**
@@ -150,4 +161,20 @@ export interface FileUploadConfig {
   accept: string
   maxSize: number
   aspectRatio?: number
+}
+
+/**
+ * Editor storage data
+ * @property charters - List of charter companies and their data
+ * @property globalProfit - Default profit margins
+ * @property agencyLogo - Base64 encoded agency logo
+ * @property promotionalImage - Base64 encoded promotional image
+ * @property lastUpdated - ISO date string of last update
+ */
+export interface StorageData {
+  charters: CharterData[]
+  globalProfit: GlobalProfit
+  agencyLogo?: string
+  promotionalImage?: string
+  lastUpdated: string
 }

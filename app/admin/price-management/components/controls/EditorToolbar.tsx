@@ -2,15 +2,13 @@
 
 import React, { useRef, useMemo } from 'react'
 import { Button, Input, Label, Select } from '@/app/components/ui'
-import PriceEditor from '../editors/PriceEditor'
 import type {
   CharterData,
   GlobalProfit,
   DestinationData,
 } from '@/types/charter'
-import { validateDestination } from '../../utils/validation'
 import { FaSave, FaDownload, FaUpload } from 'react-icons/fa'
-import { fileOperations } from '../../utils/fileOperations'
+import toast from 'react-hot-toast'
 
 interface EditorToolbarProps {
   charters: CharterData[]
@@ -19,13 +17,15 @@ interface EditorToolbarProps {
   onGlobalProfitChange: (profit: GlobalProfit) => void
   onDownload: () => void
   onSave: () => void
-  onLoad: () => void
+  onLoad: (event: React.ChangeEvent<HTMLInputElement>) => void
   onAgencyLogoChange: (logo: string) => void
   onPromotionalImageChange: (image: string) => void
   selectedDestination: string
   onDestinationChange: (destination: string) => void
   selectedCharterIndex: number
   onSelectCharter: (index: number) => void
+  agencyLogo?: string
+  promotionalImage?: string
 }
 
 const EditorToolbar: React.FC<EditorToolbarProps> = ({
@@ -42,278 +42,232 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onDestinationChange,
   selectedCharterIndex,
   onSelectCharter,
+  agencyLogo,
+  promotionalImage,
 }) => {
   const agencyLogoInputRef = useRef<HTMLInputElement>(null)
   const promotionalImageInputRef = useRef<HTMLInputElement>(null)
 
-  // Get all unique destinations across all charters
-  const allDestinations = useMemo(() => {
-    const destinations = new Set<string>(['MIA-HAV']) // Always include MIA-HAV
-    if (!charters?.length) return Array.from(destinations)
+  // Generate destination options
+  const destinationOptions = useMemo(() => {
+    if (!charters || selectedCharterIndex < 0) {
+      return []
+    }
 
-    charters.forEach((charter) => {
-      charter?.destinations?.forEach((dest) => {
-        if (dest?.destination) {
-          destinations.add(dest.destination)
-        }
-      })
-    })
-    return Array.from(destinations).sort()
+    const charter = charters[selectedCharterIndex]
+    if (!charter?.destinations) {
+      return []
+    }
+
+    return charter.destinations.map((dest) => ({
+      value: dest.destination,
+      label: dest.destination,
+    }))
+  }, [charters, selectedCharterIndex])
+
+  // Generate charter options
+  const charterOptions = useMemo(() => {
+    if (!charters || charters.length === 0) {
+      console.log('[EditorToolbar] No charters available')
+      return []
+    }
+
+    return charters.map((charter, index) => ({
+      value: index.toString(),
+      label: charter.name || `Charter ${index + 1}`,
+    }))
   }, [charters])
 
-  // Get available charters for selected destination
-  const availableCharters = useMemo(() => {
-    if (!selectedDestination || !charters?.length) return []
-    return charters.filter(
-      (charter) =>
-        charter?.destinations?.some?.(
-          (dest) => dest?.destination === selectedDestination
-        ) ?? false
-    )
-  }, [charters, selectedDestination])
+  // Handle charter selection
+  const handleCharterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = parseInt(event.target.value)
+    if (!isNaN(index)) {
+      onSelectCharter(index)
 
-  // Get current destination data
-  const currentDestinationData = useMemo(() => {
-    if (
-      selectedCharterIndex < 0 ||
-      !selectedDestination ||
-      !charters?.[selectedCharterIndex]
-    )
-      return undefined
-    return charters[selectedCharterIndex]?.destinations?.find?.(
-      (dest) => dest?.destination === selectedDestination
-    )
-  }, [charters, selectedCharterIndex, selectedDestination])
-
-  // File upload handler
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    callback: (result: string) => void
-  ) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      console.error('Only image files are allowed')
-      return
-    }
-
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      console.error('File size exceeds 5MB limit')
-      return
-    }
-
-    // Read file as base64
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const result = e.target?.result as string
-      callback(result)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  // Handle charter data import
-  const handleCharterImport = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!fileOperations.validateFileFormat(file)) {
-      console.error('Invalid file format')
-      return
-    }
-
-    const result = await fileOperations.importFromFile(file)
-    if (result.success && result.data) {
-      onCharterUpdate(result.data)
-    } else {
-      console.error('Failed to import charter data:', result.error)
+      // Reset destination selection when charter changes
+      if (charters[index]?.destinations?.length > 0) {
+        onDestinationChange(charters[index].destinations[0].destination)
+      }
     }
   }
 
-  // Handle charter data export
-  const handleExportPDF = async () => {
-    const result = await fileOperations.exportToPDF(charters)
-    if (!result.success) {
-      console.error('Failed to export PDF:', result.error)
+  // Handle file selection for agency logo
+  const handleAgencyLogoSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      try {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64String = reader.result as string
+          onAgencyLogoChange(base64String)
+        }
+        reader.readAsDataURL(file)
+      } catch (error) {
+        console.error('[EditorToolbar] Error reading agency logo:', error)
+        toast.error('Error uploading agency logo')
+      }
+    }
+  }
+
+  // Handle file selection for promotional image
+  const handlePromotionalImageSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      try {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64String = reader.result as string
+          onPromotionalImageChange(base64String)
+        }
+        reader.readAsDataURL(file)
+      } catch (error) {
+        console.error('[EditorToolbar] Error reading promotional image:', error)
+        toast.error('Error uploading promotional image')
+      }
     }
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-gray-800 rounded-lg">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4">
-          {/* Save Button */}
-          <Button onClick={onSave} className="flex items-center gap-2">
-            <FaSave /> Save
-          </Button>
+    <div className="bg-gray-800 p-4 rounded-lg space-y-6">
+      {/* Charter Selection */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-200">
+          Charter Selection
+        </h3>
 
-          {/* Load Button */}
-          <Button onClick={onLoad} className="flex items-center gap-2">
-            <FaUpload /> Load
-          </Button>
-
-          {/* Export Button */}
-          <Button onClick={handleExportPDF} className="flex items-center gap-2">
-            <FaDownload /> Export PDF
-          </Button>
-
-          {/* Import Button */}
-          <div className="relative">
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleCharterImport}
-              className="hidden"
-              id="charter-import"
-            />
-            <Button
-              onClick={() => document.getElementById('charter-import')?.click()}
-              className="flex items-center gap-2"
-            >
-              <FaUpload /> Import JSON
-            </Button>
-          </div>
-        </div>
-
-        {/* Global Profit Controls */}
-        <div className="flex gap-4 items-center">
-          <Label>Round Trip Profit:</Label>
-          <Input
-            type="number"
-            value={globalProfit.rt}
-            onChange={(e) =>
-              onGlobalProfitChange({
-                ...globalProfit,
-                rt: Number(e.target.value),
-              })
-            }
-            className="w-24"
-          />
-
-          <Label>One Way Profit:</Label>
-          <Input
-            type="number"
-            value={globalProfit.ow}
-            onChange={(e) =>
-              onGlobalProfitChange({
-                ...globalProfit,
-                ow: Number(e.target.value),
-              })
-            }
-            className="w-24"
+        {/* Charter Dropdown */}
+        <div>
+          <Label className="text-gray-300">Charter</Label>
+          <Select
+            value={selectedCharterIndex.toString()}
+            onChange={handleCharterChange}
+            options={charterOptions}
+            className="w-full bg-gray-700 border-gray-600 text-gray-200"
           />
         </div>
-      </div>
 
-      {/* Destination and Charter Selection */}
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <Label>Destination:</Label>
+        {/* Destination Dropdown */}
+        <div>
+          <Label className="text-gray-300">Destination</Label>
           <Select
             value={selectedDestination}
             onChange={(e) => onDestinationChange(e.target.value)}
-            className="bg-gray-600 text-white"
-            options={allDestinations.map((dest) => ({
-              value: dest,
-              label: dest,
-            }))}
+            options={destinationOptions}
+            className="w-full bg-gray-700 border-gray-600 text-gray-200"
           />
         </div>
 
-        <div className="flex-1">
-          <Label>Charter:</Label>
-          <Select
-            value={selectedCharterIndex.toString()}
-            onChange={(e) => onSelectCharter(Number(e.target.value))}
-            className="bg-gray-600 text-white"
-            options={[
-              { value: '-1', label: 'Seleccionar charter...' },
-              ...(availableCharters?.map((charter) => ({
-                value: charters.indexOf(charter).toString(),
-                label: charter.name || 'Charter sin nombre',
-              })) || []),
-            ]}
-          />
+        {/* Global Profit Controls */}
+        <div className="space-y-2">
+          <Label className="text-gray-300">Global Profit</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-gray-300">Round Trip ($)</Label>
+              <Input
+                type="number"
+                value={globalProfit.rt}
+                onChange={(e) =>
+                  onGlobalProfitChange({
+                    ...globalProfit,
+                    rt: parseFloat(e.target.value) || 0,
+                  })
+                }
+                min="0"
+                className="w-full bg-gray-700 border-gray-600 text-gray-200"
+              />
+            </div>
+            <div>
+              <Label className="text-gray-300">One Way ($)</Label>
+              <Input
+                type="number"
+                value={globalProfit.ow}
+                onChange={(e) =>
+                  onGlobalProfitChange({
+                    ...globalProfit,
+                    ow: parseFloat(e.target.value) || 0,
+                  })
+                }
+                min="0"
+                className="w-full bg-gray-700 border-gray-600 text-gray-200"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Agency Logo Upload */}
-      <div className="flex gap-4">
-        <div>
-          <Label>Agency Logo:</Label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => handleFileUpload(e, onAgencyLogoChange)}
-            ref={agencyLogoInputRef}
-            className="hidden"
-          />
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={onSave}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+        >
+          <FaSave className="w-4 h-4" />
+          <span>Save</span>
+        </Button>
+
+        <Button
+          onClick={onDownload}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+        >
+          <FaDownload className="w-4 h-4" />
+          <span>Export</span>
+        </Button>
+
+        <div className="relative">
           <Button
             onClick={() => agencyLogoInputRef.current?.click()}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
           >
-            <FaUpload /> Upload Logo
+            <FaUpload className="w-4 h-4" />
+            <span>Logo</span>
           </Button>
-        </div>
-
-        {/* Promotional Image Upload */}
-        <div>
-          <Label>Promotional Image:</Label>
           <input
+            ref={agencyLogoInputRef}
             type="file"
             accept="image/*"
-            onChange={(e) => handleFileUpload(e, onPromotionalImageChange)}
-            ref={promotionalImageInputRef}
+            onChange={handleAgencyLogoSelect}
             className="hidden"
           />
+        </div>
+
+        <div className="relative">
           <Button
             onClick={() => promotionalImageInputRef.current?.click()}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-pink-600 hover:bg-pink-700"
           >
-            <FaUpload /> Upload Promo
+            <FaUpload className="w-4 h-4" />
+            <span>Promo</span>
           </Button>
+          <input
+            ref={promotionalImageInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePromotionalImageSelect}
+            className="hidden"
+          />
         </div>
       </div>
 
-      {/* Editors - Only show if both destination and charter are selected */}
-      {currentDestinationData && selectedCharterIndex >= 0 && (
-        <>
-          <PriceEditor
-            destinationData={currentDestinationData}
-            globalProfit={globalProfit}
-            onDestinationUpdate={(updatedDestData) => {
-              if (!selectedDestination || selectedCharterIndex < 0) return
-
-              const updatedCharters = [...charters]
-              const charter = { ...updatedCharters[selectedCharterIndex] }
-              charter.destinations = [...charter.destinations]
-              updatedCharters[selectedCharterIndex] = charter
-
-              const destIndex = charter.destinations.findIndex(
-                (dest) => dest.destination === selectedDestination
-              )
-
-              if (destIndex >= 0) {
-                // Validate the updated destination data
-                const validationResult = validateDestination(updatedDestData)
-                if (!validationResult.isValid) {
-                  console.error('Validation errors:', validationResult.errors)
-                  return
-                }
-
-                charter.destinations[destIndex] = {
-                  ...updatedDestData,
-                  lastUpdated: new Date().toISOString(),
-                }
-                onCharterUpdate(updatedCharters)
-              }
-            }}
-          />
-        </>
+      {/* Debug Information */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 p-4 bg-gray-900 rounded text-xs text-gray-400">
+          <pre>
+            {JSON.stringify(
+              {
+                selectedDestination,
+                selectedCharterIndex,
+                charterName: charters[selectedCharterIndex]?.name,
+                destinationsCount: destinationOptions.length,
+              },
+              null,
+              2
+            )}
+          </pre>
+        </div>
       )}
     </div>
   )

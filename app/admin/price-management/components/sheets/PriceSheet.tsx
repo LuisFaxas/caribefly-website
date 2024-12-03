@@ -49,7 +49,9 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
 
   // Get the current charter data
   const currentCharter = charters?.find((charter) =>
-    charter?.destinations?.some((dest) => dest.destination === selectedDestination)
+    charter?.destinations?.some(
+      (dest) => dest.destination === selectedDestination
+    )
   )
 
   // Get the current destination data
@@ -60,161 +62,152 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
   if (!currentCharter || !currentDestination) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">No charter data available for the selected destination.</p>
+        <p className="text-gray-500">
+          No charter data available for the selected destination.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="price-sheet">
+    <div className="w-[800px] bg-gradient-to-b from-gray-800 to-gray-900 p-8 text-white rounded-lg shadow-xl">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-6">
+      <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+        {/* Logo and Agency Name */}
+        <div className="flex items-center gap-4">
           {agencyLogo ? (
             <img
               src={agencyLogo}
               alt="Agency Logo"
-              className="h-16 w-auto object-contain"
+              className="w-16 h-16 rounded-full object-cover border-2 border-yellow-400"
             />
           ) : (
-            <div className="w-16 h-16 bg-blue-900/50 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center border-2 border-yellow-400">
               <span className="text-2xl">✈️</span>
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold">Charter Prices</h1>
-            <p className="text-gray-300">{currentDate}</p>
+            <h1 className="text-2xl font-bold text-yellow-400">CaribeFly</h1>
+            <p className="text-gray-300 text-sm">{currentDate}</p>
           </div>
         </div>
 
-        <div className="text-right">
-          <h2 className="text-xl font-semibold">{currentCharter.name}</h2>
+        {/* Route Info */}
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-yellow-400">
+            {currentCharter.name}
+          </h2>
           <p className="text-gray-300">
             {getFullRouteName(currentDestination.destination)}
           </p>
+        </div>
+
+        {/* Contact Info */}
+        <div className="text-right">
+          <div className="text-yellow-400 text-xs mb-2">
+            Consultas y Reservas:
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-end gap-2">
+              <FaPhone className="text-yellow-400" />
+              <span>(305) 333-7457</span>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <FaWhatsapp className="text-yellow-400" />
+              <span>(305) 333-7458</span>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <FaEnvelope className="text-yellow-400" />
+              <span>ventas@caribefly.com</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Promotional Image */}
       {promotionalImage && (
-        <div className="mb-8">
+        <div className="mb-6">
           <img
             src={promotionalImage}
             alt="Promotional"
-            className="w-full h-48 object-cover rounded-lg"
+            className="w-full h-40 object-cover rounded-lg"
           />
         </div>
       )}
 
       {/* Flight Information */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Flight Information</h3>
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium mb-2">Flight Days</h4>
-            <ul className="list-disc list-inside text-gray-300">
-              {currentDestination.flightDays.map((day, index) => (
-                <li key={index}>{day}</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-medium mb-2">Flight Times</h4>
-            <ul className="list-disc list-inside text-gray-300">
-              {currentDestination.flightTimes.map((time, index) => (
-                <li key={index}>
-                  Departure: {time.ida} - Return: {time.regreso}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
+      <div className="grid grid-cols-2 gap-6 mb-6">
+        <Card className="p-4 bg-gray-800/50 border-gray-700">
+          <h3 className="text-lg font-semibold mb-2 text-yellow-400">
+            Días de Vuelo
+          </h3>
+          <ul className="list-disc list-inside space-y-1 text-gray-300">
+            {currentDestination.flightDays.map((day, index) => (
+              <li key={index}>{day}</li>
+            ))}
+          </ul>
+        </Card>
 
-      {/* Price Table */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4">Pricing</h3>
-        <Card className="overflow-hidden border-gray-700">
-          <table className="min-w-full divide-y divide-gray-700">
-            <thead className="bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold">
-                  Period
-                </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">
-                  Round Trip
-                </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">
-                  One Way
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {currentDestination.periods.map((period, index) => (
-                <tr
-                  key={index}
-                  className={`${
-                    index % 2 === 0 ? 'bg-gray-900' : 'bg-gray-800'
-                  }`}
-                >
-                  <td className="px-6 py-4 text-sm">{period.label}</td>
-                  <td className="px-6 py-4 text-right text-sm">
-                    ${calculateFinalPrice(period.rt, 'rt').toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 text-right text-sm">
-                    ${calculateFinalPrice(period.ow, 'ow').toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <Card className="p-4 bg-gray-800/50 border-gray-700">
+          <h3 className="text-lg font-semibold mb-2 text-yellow-400">
+            Horarios
+          </h3>
+          <div className="space-y-2">
+            {currentDestination.flightTimes.map((time, index) => (
+              <div key={index} className="flex justify-between text-gray-300">
+                <span>Ida: {time.ida}</span>
+                <span>Regreso: {time.regreso}</span>
+              </div>
+            ))}
+          </div>
         </Card>
       </div>
 
+      {/* Pricing Table */}
+      <Card className="mb-6 overflow-hidden bg-gray-800/50 border-gray-700">
+        <div className="divide-y divide-gray-700">
+          <div className="grid grid-cols-3 bg-gray-900 text-yellow-400 font-semibold p-3">
+            <div>Período</div>
+            <div className="text-center">Ida y Vuelta</div>
+            <div className="text-center">Solo Ida</div>
+          </div>
+          {currentDestination.periods.map((period, index) => (
+            <div key={index} className="grid grid-cols-3 p-3">
+              <div className="text-gray-300">{period.label}</div>
+              <div className="text-center text-gray-300">
+                ${calculateFinalPrice(period.rt, 'rt')}
+              </div>
+              <div className="text-center text-gray-300">
+                ${calculateFinalPrice(period.ow, 'ow')}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* Additional Information */}
-      <div className="space-y-6">
-        {currentDestination.baggageInfo?.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Baggage Information</h3>
-            <ul className="list-disc list-inside text-gray-300 space-y-1">
-              {currentDestination.baggageInfo.map((info, index) => (
-                <li key={index}>{info}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+      <div className="grid grid-cols-2 gap-6">
+        <Card className="p-4 bg-gray-800/50 border-gray-700">
+          <h3 className="text-lg font-semibold mb-2 text-yellow-400">
+            Equipaje
+          </h3>
+          <ul className="list-disc list-inside space-y-1 text-gray-300">
+            {currentDestination.baggageInfo.map((info, index) => (
+              <li key={index}>{info}</li>
+            ))}
+          </ul>
+        </Card>
 
-        {currentDestination.additionalInfo?.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-2">
-              Additional Information
-            </h3>
-            <ul className="list-disc list-inside text-gray-300 space-y-1">
-              {currentDestination.additionalInfo.map((info, index) => (
-                <li key={index}>{info}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {/* Contact Information */}
-      <div className="mt-8 text-right space-y-2">
-        <div className="text-yellow-400 text-xs mb-1">
-          For Inquiries and Reservations:
-        </div>
-        <div className="flex items-center justify-end gap-2 text-lg font-bold">
-          <FaPhone className="text-base" />
-          <span>(305) 333-7457</span>
-        </div>
-        <div className="flex items-center justify-end gap-2 text-lg font-bold">
-          <FaWhatsapp className="text-base" />
-          <span>(305) 333-7458</span>
-        </div>
-        <div className="flex items-center justify-end gap-2 text-lg font-bold">
-          <FaEnvelope className="text-base" />
-          <span>ventas@caribefly.com</span>
-        </div>
+        <Card className="p-4 bg-gray-800/50 border-gray-700">
+          <h3 className="text-lg font-semibold mb-2 text-yellow-400">
+            Información Adicional
+          </h3>
+          <ul className="list-disc list-inside space-y-1 text-gray-300">
+            {currentDestination.additionalInfo.map((info, index) => (
+              <li key={index}>{info}</li>
+            ))}
+          </ul>
+        </Card>
       </div>
     </div>
   )
