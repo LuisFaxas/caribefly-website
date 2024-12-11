@@ -1,12 +1,12 @@
 // src/components/controls/EditorToolbar.tsx
 
-import React, { useRef, useMemo } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import Select from '@/components/ui/select'
+import React, { useRef, useMemo, ChangeEvent } from 'react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import Select from '../ui/select'
 import PriceEditor from '../editors/PriceEditor'
-import type { CharterData, GlobalProfit, DestinationData } from '@/types'
+import type { CharterData, GlobalProfit, DestinationData } from '../../types'
 import { FaSave, FaDownload, FaUpload } from 'react-icons/fa'
 
 interface EditorToolbarProps {
@@ -51,84 +51,69 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         destinations.add(dest.destination)
       })
     })
-    return Array.from(destinations).sort((a, b) => {
-      if (a === 'MIA-HAV') return -1
-      if (b === 'MIA-HAV') return 1
-      return a.localeCompare(b)
-    })
+    return Array.from(destinations)
   }, [charters])
 
-  // Get available charters for selected destination
-  const availableCharters = useMemo(() => {
-    if (!selectedDestination) return []
-    return charters.filter((charter) =>
-      charter.destinations.some(
-        (dest) => dest.destination === selectedDestination
-      )
-    )
-  }, [charters, selectedDestination])
-
-  // Get current destination data
-  const currentDestinationData = useMemo(() => {
-    if (selectedCharterIndex < 0 || !selectedDestination) return undefined
+  // Get the current destination data
+  const currentDestination = useMemo(() => {
+    if (selectedCharterIndex === -1) return null
     const charter = charters[selectedCharterIndex]
     return charter?.destinations.find(
       (dest) => dest.destination === selectedDestination
     )
   }, [charters, selectedCharterIndex, selectedDestination])
 
-  // File upload handler
-  const handleFileUpload = (
-    event: React.ChangeEvent<HTMLInputElement>,
-    callback: (result: string) => void
-  ) => {
-    const file = event.target.files?.[0]
+  const handleDestinationChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    onDestinationChange(e.target.value)
+  }
+
+  const handleCharterSelect = (e: ChangeEvent<HTMLSelectElement>) => {
+    onSelectCharter(parseInt(e.target.value))
+  }
+
+  const handleAgencyLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = () => {
-        if (reader.result) {
-          callback(reader.result as string)
-        }
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        onAgencyLogoChange(result)
       }
       reader.readAsDataURL(file)
     }
   }
 
-  // Destination update handler
-  const handleDestinationUpdate = (updatedDestData: DestinationData) => {
-    if (!selectedDestination || selectedCharterIndex < 0) return
+  const handlePromotionalImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        onPromotionalImageChange(result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
-    // Create a copy of the charters array
+  const handleDestinationDataUpdate = (updatedData: DestinationData) => {
+    if (selectedCharterIndex === -1) return
+
     const updatedCharters = [...charters]
-
-    // Create a copy of the selected charter
     const charter = { ...updatedCharters[selectedCharterIndex] }
-
-    // Create a copy of the destinations array
-    charter.destinations = [...charter.destinations]
-
-    // Update the charter in the updatedCharters array
-    updatedCharters[selectedCharterIndex] = charter
-
-    // Find the index of the destination to update
     const destIndex = charter.destinations.findIndex(
       (dest) => dest.destination === selectedDestination
     )
 
-    if (destIndex >= 0) {
-      // Create a copy of the updated destination data
-      const updatedDestination = { ...updatedDestData }
-
-      // Update the destination
-      charter.destinations[destIndex] = updatedDestination
-
-      // Update the state with the new charters array
+    if (destIndex !== -1) {
+      charter.destinations = [...charter.destinations]
+      charter.destinations[destIndex] = updatedData
+      updatedCharters[selectedCharterIndex] = charter
       onCharterUpdate(updatedCharters)
     }
   }
 
   return (
-    <div className="space-y-6 bg-gray-800 p-6 rounded-lg shadow-md text-white">
+    <div className="space-y-4 bg-gray-800 p-6 rounded-lg shadow-md text-white">
       {/* Destination Selector - First */}
       <div className="bg-gray-700 p-4 rounded-lg">
         <Label
@@ -140,7 +125,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         <Select
           id="destinationSelect"
           value={selectedDestination}
-          onChange={(e) => onDestinationChange(e.target.value)}
+          onChange={handleDestinationChange}
           className="bg-gray-600 text-white"
         >
           <option value="">Seleccionar destino...</option>
@@ -152,55 +137,8 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </Select>
       </div>
 
-      {/* Global Profit Settings */}
-      <div className="bg-gray-700 p-4 rounded-lg">
-        <Label className="text-xl font-semibold mb-2 text-white">
-          Ganancia Global
-        </Label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="globalProfitRT" className="text-white">
-              Ganancia R/T ($)
-            </Label>
-            <Input
-              id="globalProfitRT"
-              type="number"
-              value={globalProfit.rt}
-              onChange={(e) =>
-                onGlobalProfitChange({
-                  ...globalProfit,
-                  rt: parseFloat(e.target.value) || 0,
-                })
-              }
-              className="mt-1 bg-gray-600 text-white"
-              min="0"
-              step="1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="globalProfitOW" className="text-white">
-              Ganancia O/W ($)
-            </Label>
-            <Input
-              id="globalProfitOW"
-              type="number"
-              value={globalProfit.ow}
-              onChange={(e) =>
-                onGlobalProfitChange({
-                  ...globalProfit,
-                  ow: parseFloat(e.target.value) || 0,
-                })
-              }
-              className="mt-1 bg-gray-600 text-white"
-              min="0"
-              step="1"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Charter Selector - Only show if destination is selected */}
-      {selectedDestination && availableCharters.length > 0 && (
+      {selectedDestination && charters.length > 0 && (
         <div className="bg-gray-700 p-4 rounded-lg">
           <Label
             htmlFor="charterSelect"
@@ -210,13 +148,13 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </Label>
           <Select
             id="charterSelect"
-            value={selectedCharterIndex}
-            onChange={(e) => onSelectCharter(Number(e.target.value))}
+            value={selectedCharterIndex.toString()}
+            onChange={handleCharterSelect}
             className="bg-gray-600 text-white"
           >
-            <option value={-1}>Seleccionar charter...</option>
-            {availableCharters.map((charter) => (
-              <option key={charter.name} value={charters.indexOf(charter)}>
+            <option value="-1">Seleccionar charter...</option>
+            {charters.map((charter, index) => (
+              <option key={index} value={index}>
                 {charter.name}
               </option>
             ))}
@@ -239,7 +177,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               id="agencyLogoUpload"
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileUpload(e, onAgencyLogoChange)}
+              onChange={handleAgencyLogoUpload}
               ref={agencyLogoInputRef}
               className="hidden"
             />
@@ -262,7 +200,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
               id="promotionalImageUpload"
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileUpload(e, onPromotionalImageChange)}
+              onChange={handlePromotionalImageUpload}
               ref={promotionalImageInputRef}
               className="hidden"
             />
@@ -281,13 +219,6 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
       {/* Action Buttons */}
       <div className="flex space-x-4">
         <Button
-          onClick={onDownload}
-          className="flex-1 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white"
-        >
-          <FaDownload className="mr-2" />
-          Descargar
-        </Button>
-        <Button
           onClick={onSave}
           className="flex-1 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white"
         >
@@ -301,15 +232,22 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <FaUpload className="mr-2 transform rotate-180" />
           Cargar
         </Button>
+        <Button
+          onClick={onDownload}
+          className="flex-1 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          <FaDownload className="mr-2" />
+          Descargar
+        </Button>
       </div>
 
       {/* Editors - Only show if both destination and charter are selected */}
-      {currentDestinationData && selectedCharterIndex >= 0 && (
+      {currentDestination && selectedCharterIndex >= 0 && (
         <>
           <PriceEditor
-            destinationData={currentDestinationData}
+            destinationData={currentDestination}
             globalProfit={globalProfit}
-            onDestinationUpdate={handleDestinationUpdate}
+            onDestinationUpdate={handleDestinationDataUpdate}
           />
         </>
       )}

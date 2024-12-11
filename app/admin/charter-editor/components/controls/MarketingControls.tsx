@@ -1,8 +1,8 @@
 // src/components/controls/MarketingControls.tsx
 import React from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '../ui/card'
+import { Label } from '../ui/label'
+import { Button } from '../ui/button'
 
 interface MarketingControlsProps {
   onLogoUpload: (image: string) => void

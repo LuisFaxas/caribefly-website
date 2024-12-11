@@ -1,12 +1,12 @@
 // src/components/editors/PriceEditor.tsx
 
-import React, { useState, useEffect } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import React, { useState, useEffect, ChangeEvent } from 'react'
+import { Card, CardContent } from '../ui/card'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Button } from '../ui/button'
 import TimeSelector from '../ui/TimeSelector'
-import type { DestinationData, GlobalProfit } from '@/types'
+import type { DestinationData, GlobalProfit } from '../../types'
 import { FaTrash, FaPlus } from 'react-icons/fa'
 import BaggageInfoEditor from './BaggageInfoEditor'
 import InfoEditor from './InfoEditor'
@@ -61,6 +61,18 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     )
     updatedData.flightDays = updatedData.flightDays.filter(
       (_, i) => i !== index
+    )
+    applyUpdates(updatedData)
+  }
+
+  const handleFlightTimeChange = (
+    index: number,
+    type: 'ida' | 'regreso',
+    value: string
+  ) => {
+    const updatedData = { ...localData }
+    updatedData.flightTimes = updatedData.flightTimes.map((time, idx) =>
+      idx === index ? { ...time, [type]: value } : time
     )
     applyUpdates(updatedData)
   }
@@ -131,19 +143,6 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
   // Additional Info Update Handler
   const handleAdditionalInfoUpdate = (newInfo: string[]) => {
     const updatedData = { ...localData, additionalInfo: newInfo }
-    applyUpdates(updatedData)
-  }
-
-  // Flight Time Handlers
-  const handleFlightTimeChange = (
-    index: number,
-    type: 'ida' | 'regreso',
-    newTime: string
-  ) => {
-    const updatedData = { ...localData }
-    updatedData.flightTimes = updatedData.flightTimes.map((time, idx) =>
-      idx === index ? { ...time, [type]: newTime } : time
-    )
     applyUpdates(updatedData)
   }
 

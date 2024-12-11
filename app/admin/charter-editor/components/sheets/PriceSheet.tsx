@@ -3,8 +3,9 @@
 import React from 'react'
 import type { CharterData, GlobalProfit } from '@/types'
 import { airportNames } from '@/data/airportCodes'
+import Image from 'next/image'
 import { FaPhone, FaEnvelope, FaWhatsapp } from 'react-icons/fa'
-import PriceDisplay from '@/components/ui/PriceDisplay'
+import PriceDisplay from '../ui/PriceDisplay'
 
 interface PriceSheetProps {
   charters: CharterData[]
@@ -58,7 +59,7 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
         {/* Logo Section */}
         <div className="flex items-center gap-4">
           {agencyLogo ? (
-            <img
+            <Image
               src={agencyLogo}
               alt="Logo de la Agencia"
               width={48}
@@ -231,9 +232,11 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
             CONTACTO Y SERVICIOS
           </div>
           {promotionalImage ? (
-            <img
+            <Image
               src={promotionalImage}
               alt="Promoción"
+              width={600}
+              height={400}
               className="w-full h-48 object-cover rounded-b-lg"
             />
           ) : (

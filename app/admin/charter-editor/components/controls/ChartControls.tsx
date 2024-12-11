@@ -1,11 +1,11 @@
 // src/components/controls/ChartControls.tsx
-import React from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
-import { GlobalProfit } from '@/types'
-import { FaSave, FaDownload } from 'react-icons/fa' // Import save and load icons
+import React, { ChangeEvent } from 'react'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Card, CardContent } from '../ui/card'
+import { GlobalProfit } from '../../types'
+import { FaSave, FaDownload } from 'react-icons/fa'
 
 interface ChartControlsProps {
   onDownload: () => void
@@ -41,7 +41,9 @@ const ChartControls: React.FC<ChartControlsProps> = ({
               id="globalProfitRT"
               type="number"
               value={globalProfit.rt}
-              onChange={(e) => handleProfitChange('rt', e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleProfitChange('rt', e.target.value)
+              }
               className="mt-1"
             />
           </div>
@@ -51,7 +53,9 @@ const ChartControls: React.FC<ChartControlsProps> = ({
               id="globalProfitOW"
               type="number"
               value={globalProfit.ow}
-              onChange={(e) => handleProfitChange('ow', e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                handleProfitChange('ow', e.target.value)
+              }
               className="mt-1"
             />
           </div>
@@ -59,28 +63,22 @@ const ChartControls: React.FC<ChartControlsProps> = ({
 
         {/* Updated Buttons with Icons and Labels */}
         <div className="flex gap-2">
-          <Button
-            onClick={onDownload}
-            className="flex-1 flex items-center justify-center"
-            title="Descargar"
-          >
-            <FaDownload className="mr-2" />
-          </Button>
-          <Button
-            onClick={onSave}
-            variant="outline"
-            className="flex-1 flex items-center justify-center"
-            title="Guardar Datos"
-          >
-            <FaSave className="mr-2" />
+          <Button onClick={onSave} className="flex items-center gap-2">
+            <FaSave /> Guardar
           </Button>
           <Button
             onClick={onLoad}
             variant="outline"
-            className="flex-1 flex items-center justify-center"
-            title="Cargar Datos"
+            className="flex items-center gap-2"
           >
-            <FaDownload className="mr-2 transform rotate-180" />
+            <FaDownload /> Cargar
+          </Button>
+          <Button
+            onClick={onDownload}
+            variant="secondary"
+            className="flex items-center gap-2"
+          >
+            <FaDownload /> Descargar
           </Button>
         </div>
       </CardContent>

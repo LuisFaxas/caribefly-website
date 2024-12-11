@@ -1,15 +1,15 @@
 // src/components/editors/BaggageInfoEditor.tsx
 
-import { FC, ChangeEvent, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import Select from '@/components/ui/select'
-import Toast from '@/components/ui/toast'
+import React, { FC, ChangeEvent, useState } from 'react'
+import { Card, CardContent } from '../ui/card'
+import { Label } from '../ui/label'
+import { Textarea } from '../ui/textarea'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import Select from '../ui/select'
+import Toast from '../ui/toast'
 import { FaPlus, FaTrash } from 'react-icons/fa'
-import type { DestinationData } from '@/types'
+import type { DestinationData } from '../../types'
 
 interface BaggageInfoEditorProps {
   destinationData: DestinationData
