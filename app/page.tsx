@@ -24,7 +24,7 @@ export default function Home() {
   const [tabData, setTabData] = useState<TabData>({
     charters: [],
     promotions: [],
-    announcements: []
+    announcements: [],
   })
 
   // Fetch initial data from Firestore
@@ -35,24 +35,33 @@ export default function Home() {
         setError(null)
 
         // Fetch services and flight tabs
-        const [servicesSnapshot, flightTabsSnapshot, chartersSnapshot, promotionsSnapshot, announcementsSnapshot] = 
-          await Promise.all([
-            getDocs(collection(db, 'services')),
-            getDocs(collection(db, 'flightTabs')),
-            getDocs(collection(db, 'charters')),
-            getDocs(collection(db, 'promotions')),
-            getDocs(collection(db, 'announcements'))
-          ])
+        const [
+          servicesSnapshot,
+          flightTabsSnapshot,
+          chartersSnapshot,
+          promotionsSnapshot,
+          announcementsSnapshot,
+        ] = await Promise.all([
+          getDocs(collection(db, 'services')),
+          getDocs(collection(db, 'flightTabs')),
+          getDocs(collection(db, 'charters')),
+          getDocs(collection(db, 'promotions')),
+          getDocs(collection(db, 'announcements')),
+        ])
 
-        setServices(servicesSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Service[])
+        setServices(
+          servicesSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Service[]
+        )
 
-        setFlightTabs(flightTabsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as FlightTab[])
+        setFlightTabs(
+          flightTabsSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as FlightTab[]
+        )
 
         setTabData({
           charters: chartersSnapshot.docs.map((doc) => ({
@@ -81,7 +90,7 @@ export default function Home() {
 
   if (error) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-700"
         role="alert"
         aria-live="assertive"
@@ -103,7 +112,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-700"
         role="status"
         aria-live="polite"
@@ -141,11 +150,11 @@ export default function Home() {
         </div>
 
         {/* Services section */}
-        <section 
+        <section
           className="container mx-auto mt-8 md:mt-10 px-4 md:px-0"
           aria-label="Services"
         >
-          <ServiceTabs 
+          <ServiceTabs
             services={services}
             activeTab={activeTab}
             onTabChange={setActiveTab}
@@ -153,7 +162,7 @@ export default function Home() {
 
           {/* Tab content */}
           {activeTab === 'flights' && (
-            <div 
+            <div
               className="bg-gradient-to-br from-white to-blue-50 p-4 md:p-8 rounded-xl shadow-md"
               role="tabpanel"
               aria-labelledby="flights-tab"

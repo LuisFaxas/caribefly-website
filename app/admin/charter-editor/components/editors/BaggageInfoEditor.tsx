@@ -1,6 +1,6 @@
 // src/components/editors/BaggageInfoEditor.tsx
 
-import { FC, ChangeEvent, useState, useEffect } from 'react'
+import { FC, ChangeEvent, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Select from '@/components/ui/select'
 import Toast from '@/components/ui/toast'
-import { FaUndo, FaRedo, FaPlus, FaTrash } from 'react-icons/fa'
+import { FaPlus, FaTrash } from 'react-icons/fa'
 import type { DestinationData } from '@/types'
 
 interface BaggageInfoEditorProps {
@@ -46,8 +46,6 @@ const BaggageInfoEditor: FC<BaggageInfoEditorProps> = ({
     type: 'success' | 'error'
     message: string
   } | null>(null)
-  const [history, setHistory] = useState<string[][]>([[]])
-  const [currentIndex, setCurrentIndex] = useState(0)
   const [editMode, setEditMode] = useState<'list' | 'text'>('list')
 
   // Constants
@@ -55,12 +53,6 @@ const BaggageInfoEditor: FC<BaggageInfoEditorProps> = ({
   const lineLimit = 6
   const currentInfo = destinationData.baggageInfo || []
   const currentLength = currentInfo.join('\n').length
-
-  // Initialize history with current destination baggage info
-  useEffect(() => {
-    setHistory([destinationData.baggageInfo])
-    setCurrentIndex(0)
-  }, [destinationData, destinationData.baggageInfo])
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message })
@@ -109,26 +101,7 @@ const BaggageInfoEditor: FC<BaggageInfoEditorProps> = ({
 
   const updateInfo = (newInfo: string[]) => {
     onBaggageInfoUpdate(newInfo)
-    const newHistory = [...history.slice(0, currentIndex + 1), newInfo]
-    setHistory(newHistory)
-    setCurrentIndex(currentIndex + 1)
     showNotification('success', 'Cambios guardados')
-  }
-
-  const handleUndo = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-      onBaggageInfoUpdate(history[currentIndex - 1])
-      showNotification('success', 'Cambio deshecho')
-    }
-  }
-
-  const handleRedo = () => {
-    if (currentIndex < history.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-      onBaggageInfoUpdate(history[currentIndex + 1])
-      showNotification('success', 'Cambio rehecho')
-    }
   }
 
   return (
@@ -145,38 +118,10 @@ const BaggageInfoEditor: FC<BaggageInfoEditorProps> = ({
         <div className="flex flex-col gap-4">
           {/* Header with Controls */}
           <div className="flex justify-between items-center">
-            <Label className="text-lg font-semibold text-white">
-              Información de Equipaje - {destinationData.destination}
+            <Label className="text-lg font-semibold text-white flex-grow whitespace-nowrap">
+              Equipaje - {destinationData.destination} &nbsp;
             </Label>
             <div className="flex gap-2">
-              <Button
-                onClick={handleUndo}
-                disabled={currentIndex === 0}
-                variant="outline"
-                size="sm"
-                className={`flex items-center ${
-                  currentIndex === 0
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'bg-gray-600 hover:bg-gray-500 text-white'
-                }`}
-                title="Deshacer"
-              >
-                <FaUndo className="h-4 w-4" />
-              </Button>
-              <Button
-                onClick={handleRedo}
-                disabled={currentIndex === history.length - 1}
-                variant="outline"
-                size="sm"
-                className={`flex items-center ${
-                  currentIndex === history.length - 1
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'bg-gray-600 hover:bg-gray-500 text-white'
-                }`}
-                title="Rehacer"
-              >
-                <FaRedo className="h-4 w-4" />
-              </Button>
               <Button
                 onClick={() =>
                   setEditMode(editMode === 'list' ? 'text' : 'list')

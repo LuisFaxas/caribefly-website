@@ -19,20 +19,20 @@ const serviceAccount = {
 // Initialize the app
 initializeApp({
   credential: cert(serviceAccount),
-  projectId: serviceAccount.projectId
+  projectId: serviceAccount.projectId,
 })
 
 async function setAdminClaim() {
   try {
     const userEmail = 'ventas@caribefly.com'
     const auth = getAuth()
-    
+
     // Get the user by email
     const user = await auth.getUserByEmail(userEmail)
-    
+
     // Set admin claim
     await auth.setCustomUserClaims(user.uid, { admin: true })
-    
+
     console.log(`Successfully set admin claim for user: ${userEmail}`)
     process.exit(0)
   } catch (error) {

@@ -1,7 +1,7 @@
-// app/admin/charter-editor/components/controls/ConfirmationDialog.tsx
+// src/components/ui/ConfirmationDialog.tsx
 
 import React from 'react'
-import { Button } from '@/app/admin/components/ui'
+import { Button } from './button'
 
 interface ConfirmationDialogProps {
   isOpen: boolean

@@ -1,0 +1,246 @@
+/* src/styles/globals.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Base Colors */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+
+  /* Card Colors */
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  /* Popover Colors */
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  /* Primary Colors */
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+
+  /* Secondary Colors */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  /* Muted Colors */
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  /* Accent Colors */
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+
+  /* Destructive Colors */
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Border & Input */
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+
+  /* Chart Colors */
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+
+  /* Border Radius */
+  --radius: 0.5rem;
+}
+
+/* Dark Mode Colors */
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  /* Card Colors */
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  /* Popover Colors */
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Primary Colors */
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  /* Secondary Colors */
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Muted Colors */
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  /* Accent Colors */
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  /* Destructive Colors */
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Border & Input */
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  /* Input Styles */
+  input {
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    color: var(--foreground); /* Ensure text is visible */
+    background-color: hsl(var(--input)); /* Set input background */
+    border-color: hsl(var(--border)); /* Set input border */
+    padding-right: 2rem; /* Add padding to prevent text overlap with spinner */
+  }
+
+  /* Re-enable number input arrows in WebKit browsers */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: auto;
+    margin: 0;
+    color: var(--foreground); /* Set spinner color */
+  }
+
+  /* Re-enable number input arrows in Firefox */
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  /* Textarea Styles */
+  textarea {
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    white-space: pre-wrap !important;
+    overflow-wrap: break-word;
+    resize: vertical;
+    line-height: 1.5;
+    min-height: 80px;
+    padding: 0.5rem;
+    color: var(--foreground); /* Ensure text is visible */
+    background-color: hsl(var(--input)); /* Set textarea background */
+    border-color: hsl(var(--border)); /* Set textarea border */
+  }
+
+  /* Textarea Placeholder */
+  textarea::placeholder {
+    white-space: pre-wrap;
+    color: var(--muted-foreground);
+  }
+
+  /* Focus States */
+  input:focus,
+  textarea:focus {
+    outline: none;
+    ring-color: var(--ring);
+    ring-offset-color: var(--background);
+  }
+
+  /* Disabled States */
+  input:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* Utility Classes */
+@layer utilities {
+  .whitespace-pre-wrap {
+    white-space: pre-wrap !important;
+  }
+
+  .resize-vertical {
+    resize: vertical;
+  }
+
+  .min-h-textarea {
+    min-height: 80px;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent));
+}
+
+/* Selection */
+::selection {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* Transition Classes */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    margin: 0.5cm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

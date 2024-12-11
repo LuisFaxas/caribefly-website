@@ -8,9 +8,13 @@ interface ServiceTabsProps {
   onTabChange: (tabId: string) => void
 }
 
-export default function ServiceTabs({ services, activeTab, onTabChange }: ServiceTabsProps) {
+export default function ServiceTabs({
+  services,
+  activeTab,
+  onTabChange,
+}: ServiceTabsProps) {
   return (
-    <div 
+    <div
       className="flex overflow-x-auto space-x-2 md:space-x-4 mb-4 md:mb-6 justify-start snap-x snap-mandatory"
       role="tablist"
       aria-label="Service categories"

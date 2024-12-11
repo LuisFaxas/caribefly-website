@@ -181,10 +181,12 @@ export default function AdminDashboard() {
       (snapshot) => {
         const data = snapshot.data()
         if (data && Array.isArray(data.tabs)) {
-          setFlightTabs(data.tabs.map(tab => ({
-            ...tab,
-            widgets: tab.widgets || [] // Ensure widgets is always an array
-          })))
+          setFlightTabs(
+            data.tabs.map((tab) => ({
+              ...tab,
+              widgets: tab.widgets || [], // Ensure widgets is always an array
+            }))
+          )
         } else {
           setFlightTabs([]) // Set empty array if no data
         }

@@ -1,8 +1,10 @@
-// app/admin/charter-editor/components/controls/ChartControls.tsx
+// src/components/controls/ChartControls.tsx
 import React from 'react'
-import { Button, Input, Label } from '@/app/admin/components/ui'
-import { Card, CardContent } from '@/app/admin/components/ui/card'
-import { GlobalProfit } from '@/types/charter'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
+import { GlobalProfit } from '@/types'
 import { FaSave, FaDownload } from 'react-icons/fa' // Import save and load icons
 
 interface ChartControlsProps {
@@ -39,9 +41,7 @@ const ChartControls: React.FC<ChartControlsProps> = ({
               id="globalProfitRT"
               type="number"
               value={globalProfit.rt}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleProfitChange('rt', e.target.value)
-              }
+              onChange={(e) => handleProfitChange('rt', e.target.value)}
               className="mt-1"
             />
           </div>
@@ -51,9 +51,7 @@ const ChartControls: React.FC<ChartControlsProps> = ({
               id="globalProfitOW"
               type="number"
               value={globalProfit.ow}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                handleProfitChange('ow', e.target.value)
-              }
+              onChange={(e) => handleProfitChange('ow', e.target.value)}
               className="mt-1"
             />
           </div>
