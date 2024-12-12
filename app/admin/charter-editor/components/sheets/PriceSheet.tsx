@@ -53,7 +53,7 @@ const PriceSheet: React.FC<PriceSheetProps> = ({
   )
 
   return (
-    <div className="w-[800px] bg-gradient-to-b from-gray-800 to-gray-900 p-4 text-white">
+    <div className="w-[800px]  bg-gradient-to-b from-gray-800 to-gray-900 p-4 text-white">
       {/* Header Section */}
       <div className="flex justify-between items-center mb-4">
         {/* Logo Section */}

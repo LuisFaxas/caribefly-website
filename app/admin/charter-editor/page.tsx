@@ -176,6 +176,7 @@ export default function CharterEditorPage() {
       {/* Preview Panel */}
       <div className="flex-1 h-screen overflow-y-auto">
         <div className="p-8">
+          {/* The PriceSheet is centered and maintains its width without shrinking */}
           <div ref={ref} className="mx-auto">
             <PriceSheet
               charters={charters}

@@ -98,7 +98,9 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* Departure Time */}
       <div className="space-y-2">
-        <Label.Root className="text-sm font-medium text-white">{label} - Ida</Label.Root>
+        <Label.Root className="text-sm font-medium text-white">
+          {label} - Ida
+        </Label.Root>
         <div className="flex items-center gap-2">
           <Select
             value={ida12.hour}
