@@ -12,15 +12,20 @@ import { storageManager } from './utils/storage'
 
 export default function CharterEditorPage() {
   const [charters, setCharters] = useState<CharterData[]>(initialCharterData)
-  const [globalProfit, setGlobalProfit] = useState<GlobalProfit>(initialGlobalProfit)
+  const [globalProfit, setGlobalProfit] =
+    useState<GlobalProfit>(initialGlobalProfit)
   const [agencyLogo, setAgencyLogo] = useState<string>('')
   const [promotionalImage, setPromotionalImage] = useState<string>('')
-  const [selectedDestination, setSelectedDestination] = useState<string>('MIA-HAV')
+  const [selectedDestination, setSelectedDestination] =
+    useState<string>('MIA-HAV')
   const [selectedCharterIndex, setSelectedCharterIndex] = useState<number>(-1)
   const [isInitialized, setIsInitialized] = useState(false)
 
   const ref = useRef<HTMLDivElement>(null)
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message })
@@ -63,7 +68,15 @@ export default function CharterEditorPage() {
     }
     const timeoutId = setTimeout(autoSave, 500)
     return () => clearTimeout(timeoutId)
-  }, [isInitialized, charters, globalProfit, agencyLogo, promotionalImage, selectedDestination, selectedCharterIndex])
+  }, [
+    isInitialized,
+    charters,
+    globalProfit,
+    agencyLogo,
+    promotionalImage,
+    selectedDestination,
+    selectedCharterIndex,
+  ])
 
   const handleDestinationChange = (destination: string) => {
     setSelectedDestination(destination)
@@ -150,7 +163,7 @@ export default function CharterEditorPage() {
         />
       )}
       {/* Editor Panel */}
-      <div className="w-[400px] h-screen overflow-y-auto bg-gray-800 border-r border-gray-700 flex-shrink-0">
+      <div className="w-[450px] h-screen overflow-y-auto bg-gray-800 border-r border-gray-700 flex-shrink-0">
         <EditorToolbar
           charters={charters}
           globalProfit={globalProfit}

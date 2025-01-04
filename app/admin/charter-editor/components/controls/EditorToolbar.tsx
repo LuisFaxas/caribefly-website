@@ -112,6 +112,12 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
     }
   }
 
+  // Handle global profit changes
+  const handleGlobalProfitChange = (field: 'rt' | 'ow', value: string) => {
+    const numValue = parseFloat(value) || 0
+    onGlobalProfitChange({ ...globalProfit, [field]: numValue })
+  }
+
   return (
     <div className="space-y-4 bg-gray-800 p-6 rounded-lg shadow-md text-white">
       {/* Destination Selector - First */}
@@ -161,6 +167,39 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({
           </Select>
         </div>
       )}
+
+      {/* Global Profit Section */}
+      <div className="bg-gray-700 p-4 rounded-lg">
+        <Label className="text-xl font-semibold mb-2 text-white">
+          Ganancia Global (USD)
+        </Label>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <div>
+            <Label htmlFor="rt-profit" className="text-sm text-gray-300">
+              Ida y Vuelta
+            </Label>
+            <Input
+              id="rt-profit"
+              type="number"
+              value={globalProfit.rt}
+              onChange={(e) => handleGlobalProfitChange('rt', e.target.value)}
+              className="bg-gray-600 text-white mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="ow-profit" className="text-sm text-gray-300">
+              Solo Ida
+            </Label>
+            <Input
+              id="ow-profit"
+              type="number"
+              value={globalProfit.ow}
+              onChange={(e) => handleGlobalProfitChange('ow', e.target.value)}
+              className="bg-gray-600 text-white mt-1"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Image Upload Section */}
       <div className="bg-gray-700 p-4 rounded-lg">

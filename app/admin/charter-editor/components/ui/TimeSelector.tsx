@@ -1,7 +1,7 @@
-// src/components/ui/TimeSelector.tsx
+// src/components/editors/TimeSelector.tsx
 
-import React from 'react'
-import Select from '../../../components/ui/select'
+import React, { ChangeEvent } from 'react'
+import Select from './select'
 import * as Label from '@radix-ui/react-label'
 
 interface TimeSelectorProps {
@@ -21,30 +21,30 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
 }) => {
   // Convert 24h to 12h format
   const to12Hour = (hour24: string) => {
-    const hour = parseInt(hour24)
-    if (hour === 0) return { hour: '12', period: 'AM' }
-    if (hour === 12) return { hour: '12', period: 'PM' }
-    if (hour > 12)
-      return { hour: (hour - 12).toString().padStart(2, '0'), period: 'PM' }
-    return { hour: hour.toString().padStart(2, '0'), period: 'AM' }
+    const hour = parseInt(hour24, 10)
+    const period = hour >= 12 ? 'PM' : 'AM'
+    let hour12 = hour % 12
+    if (hour12 === 0) hour12 = 12
+    return { hour: hour12.toString().padStart(2, '0'), period }
   }
 
-  // Convert 12h to 24h format
+  // Convert 12h + period to 24h format
   const to24Hour = (hour12: string, period: string) => {
-    let hour = parseInt(hour12)
+    let hour = parseInt(hour12, 10)
     if (period === 'PM' && hour !== 12) hour += 12
     if (period === 'AM' && hour === 12) hour = 0
     return hour.toString().padStart(2, '0')
   }
 
-  // Parse current values
-  const [idaHour24, idaMinute] = idaValue.split(':')
-  const [regresoHour24, regresoMinute] = regresoValue.split(':')
-
+  // Parse ida times
+  const [idaHour24, idaMinute = '00'] = idaValue.split(':')
   const ida12 = to12Hour(idaHour24 || '00')
+
+  // Parse regreso times
+  const [regresoHour24, regresoMinute = '00'] = regresoValue.split(':')
   const regreso12 = to12Hour(regresoHour24 || '00')
 
-  // Generate time options
+  // Generate dropdown option values
   const hours = Array.from({ length: 12 }, (_, i) =>
     (i + 1).toString().padStart(2, '0')
   )
@@ -53,106 +53,141 @@ const TimeSelector: React.FC<TimeSelectorProps> = ({
   )
   const periods = ['AM', 'PM']
 
-  const hourOptions = hours.map((hour) => ({ label: hour, value: hour }))
-  const minuteOptions = minutes.map((minute) => ({
-    label: minute,
-    value: minute,
-  }))
-  const periodOptions = periods.map((period) => ({
-    label: period,
-    value: period,
-  }))
-
-  // Handle time changes
   const handleIdaTimeChange = (
     type: 'hour' | 'minute' | 'period',
     value: string
   ) => {
-    let newTime = ''
-    if (type === 'hour') {
-      newTime = `${to24Hour(value, ida12.period)}:${idaMinute || '00'}`
-    } else if (type === 'minute') {
-      newTime = `${to24Hour(ida12.hour, ida12.period)}:${value}`
-    } else {
-      newTime = `${to24Hour(ida12.hour, value)}:${idaMinute || '00'}`
-    }
-    onIdaChange(newTime)
+    let newHour = ida12.hour
+    let newMinute = idaMinute
+    let newPeriod = ida12.period
+
+    if (type === 'hour') newHour = value
+    if (type === 'minute') newMinute = value
+    if (type === 'period') newPeriod = value
+
+    const newHour24 = to24Hour(newHour, newPeriod)
+    onIdaChange(`${newHour24}:${newMinute}`)
   }
 
   const handleRegresoTimeChange = (
     type: 'hour' | 'minute' | 'period',
     value: string
   ) => {
-    let newTime = ''
-    if (type === 'hour') {
-      newTime = `${to24Hour(value, regreso12.period)}:${regresoMinute || '00'}`
-    } else if (type === 'minute') {
-      newTime = `${to24Hour(regreso12.hour, regreso12.period)}:${value}`
-    } else {
-      newTime = `${to24Hour(regreso12.hour, value)}:${regresoMinute || '00'}`
-    }
-    onRegresoChange(newTime)
+    let newHour = regreso12.hour
+    let newMinute = regresoMinute
+    let newPeriod = regreso12.period
+
+    if (type === 'hour') newHour = value
+    if (type === 'minute') newMinute = value
+    if (type === 'period') newPeriod = value
+
+    const newHour24 = to24Hour(newHour, newPeriod)
+    onRegresoChange(`${newHour24}:${newMinute}`)
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {/* Departure Time */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {/* Ida Time */}
       <div className="space-y-2">
-        <Label.Root className="text-sm font-medium text-white">
+        <Label.Root className="text-sm font-semibold text-white">
           {label} - Ida
         </Label.Root>
         <div className="flex items-center gap-2">
           <Select
             value={ida12.hour}
-            onChange={(value: string) => handleIdaTimeChange('hour', value)}
-            options={hourOptions}
-            className="w-24 bg-gray-700 text-white border-gray-600 focus:text-white [&_option]:bg-white [&_option]:text-gray-900 [&_option]:px-1"
-          />
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              handleIdaTimeChange('hour', e.target.value)
+            }
+            className="w-20 bg-gray-700 text-white border-gray-500"
+          >
+            {hours.map((h) => (
+              <option key={h} value={h}>
+                {h}
+              </option>
+            ))}
+          </Select>
+
           <span className="text-white">:</span>
+
           <Select
-            value={idaMinute || '00'}
-            onChange={(value: string) => handleIdaTimeChange('minute', value)}
-            options={minuteOptions}
-            className="w-24 bg-gray-700 text-white border-gray-600 focus:text-white [&_option]:bg-white [&_option]:text-gray-900 [&_option]:px-1"
-          />
+            value={idaMinute}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              handleIdaTimeChange('minute', e.target.value)
+            }
+            className="w-20 bg-gray-700 text-white border-gray-500"
+          >
+            {minutes.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </Select>
+
           <Select
             value={ida12.period}
-            onChange={(value: string) => handleIdaTimeChange('period', value)}
-            options={periodOptions}
-            className="w-28 bg-gray-700 text-white border-gray-600 focus:text-white [&_option]:bg-white [&_option]:text-gray-900 [&_option]:px-1"
-          />
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              handleIdaTimeChange('period', e.target.value)
+            }
+            className="w-24 bg-gray-700 text-white border-gray-500"
+          >
+            {periods.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </Select>
         </div>
       </div>
 
-      {/* Return Time */}
+      {/* Regreso Time */}
       <div className="space-y-2">
-        <Label.Root className="text-sm font-medium text-white">
+        <Label.Root className="text-sm font-semibold text-white">
           {label} - Regreso
         </Label.Root>
         <div className="flex items-center gap-2">
           <Select
             value={regreso12.hour}
-            onChange={(value: string) => handleRegresoTimeChange('hour', value)}
-            options={hourOptions}
-            className="w-24 bg-gray-700 text-white border-gray-600 focus:text-white [&_option]:bg-white [&_option]:text-gray-900 [&_option]:px-1"
-          />
-          <span className="text-white">:</span>
-          <Select
-            value={regresoMinute || '00'}
-            onChange={(value: string) =>
-              handleRegresoTimeChange('minute', value)
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              handleRegresoTimeChange('hour', e.target.value)
             }
-            options={minuteOptions}
-            className="w-24 bg-gray-700 text-white border-gray-600 focus:text-white [&_option]:bg-white [&_option]:text-gray-900 [&_option]:px-1"
-          />
+            className="w-20 bg-gray-700 text-white border-gray-500"
+          >
+            {hours.map((h) => (
+              <option key={h} value={h}>
+                {h}
+              </option>
+            ))}
+          </Select>
+
+          <span className="text-white">:</span>
+
+          <Select
+            value={regresoMinute}
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              handleRegresoTimeChange('minute', e.target.value)
+            }
+            className="w-20 bg-gray-700 text-white border-gray-500"
+          >
+            {minutes.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </Select>
+
           <Select
             value={regreso12.period}
-            onChange={(value: string) =>
-              handleRegresoTimeChange('period', value)
+            onChange={(e: ChangeEvent<HTMLSelectElement>) =>
+              handleRegresoTimeChange('period', e.target.value)
             }
-            options={periodOptions}
-            className="w-28 bg-gray-700 text-white border-gray-600 focus:text-white [&_option]:bg-white [&_option]:text-gray-900 [&_option]:px-1"
-          />
+            className="w-24 bg-gray-700 text-white border-gray-500"
+          >
+            {periods.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </Select>
         </div>
       </div>
     </div>

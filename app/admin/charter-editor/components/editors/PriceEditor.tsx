@@ -1,5 +1,4 @@
 // src/components/editors/PriceEditor.tsx
-
 import React, { useState, useEffect, ChangeEvent } from 'react'
 import { Card, CardContent } from '../ui/card'
 import { Input } from '../ui/input'
@@ -17,20 +16,19 @@ interface PriceEditorProps {
   onDestinationUpdate: (updatedData: DestinationData) => void
 }
 
+const DAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
+
 const PriceEditor: React.FC<PriceEditorProps> = ({
   destinationData,
   globalProfit,
   onDestinationUpdate,
 }) => {
-  // Create a local copy for editing
   const [localData, setLocalData] = useState<DestinationData>(destinationData)
 
-  // Reset localData when destinationData changes
   useEffect(() => {
     setLocalData(destinationData)
   }, [destinationData])
 
-  // Apply updates and notify parent
   const applyUpdates = (updatedData: DestinationData) => {
     setLocalData(updatedData)
     onDestinationUpdate(updatedData)
@@ -75,6 +73,25 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
       idx === index ? { ...time, [type]: value } : time
     )
     applyUpdates(updatedData)
+  }
+
+  // Helper for toggling days
+  const toggleDay = (index: number, day: string) => {
+    const currentString = localData.flightDays[index] || ''
+    const currentDays = currentString
+      .split(',')
+      .map((d) => d.trim())
+      .filter((d) => d !== '')
+    const daySet = new Set(currentDays)
+
+    if (daySet.has(day)) {
+      daySet.delete(day)
+    } else {
+      daySet.add(day)
+    }
+
+    const newDaysStr = Array.from(daySet).join(', ')
+    handleFlightDayChange(index, newDaysStr)
   }
 
   // Price Period Handlers
@@ -134,13 +151,12 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
     applyUpdates(updatedData)
   }
 
-  // Baggage Info Update Handler
+  // Baggage and Additional Info Handlers
   const handleBaggageInfoUpdate = (newInfo: string[]) => {
     const updatedData = { ...localData, baggageInfo: newInfo }
     applyUpdates(updatedData)
   }
 
-  // Additional Info Update Handler
   const handleAdditionalInfoUpdate = (newInfo: string[]) => {
     const updatedData = { ...localData, additionalInfo: newInfo }
     applyUpdates(updatedData)
@@ -169,52 +185,73 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
           </Button>
         </div>
 
-        {localData.flightTimes.map((time, index) => (
-          <Card key={index} className="bg-gray-800 border-gray-600">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <Label className="text-md font-medium text-white">
-                  Horario {index + 1}
-                </Label>
-                <Button
-                  onClick={() => handleRemoveFlightTime(index)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                >
-                  <FaTrash className="mr-2" />
-                  Eliminar
-                </Button>
-              </div>
+        {localData.flightTimes.map((time, index) => {
+          const currentDaysString = localData.flightDays[index] || ''
+          const currentDays = currentDaysString
+            .split(',')
+            .map((d) => d.trim())
+            .filter((d) => d !== '')
 
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-white">Día de Vuelo</Label>
-                  <Input
-                    value={localData.flightDays[index] || ''}
-                    onChange={(e) =>
-                      handleFlightDayChange(index, e.target.value)
-                    }
-                    placeholder="Ej: Lunes y Jueves"
-                    className="mt-1 bg-gray-700 text-white border-gray-600"
-                  />
+          return (
+            <Card key={index} className="bg-gray-800 border-gray-600">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <Label className="text-md font-medium text-white">
+                    Horario {index + 1}
+                  </Label>
+                  <Button
+                    onClick={() => handleRemoveFlightTime(index)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                  >
+                    <FaTrash className="mr-2" />
+                    Eliminar
+                  </Button>
                 </div>
 
-                <TimeSelector
-                  label="Horarios"
-                  idaValue={time.ida}
-                  regresoValue={time.regreso}
-                  onIdaChange={(newTime) =>
-                    handleFlightTimeChange(index, 'ida', newTime)
-                  }
-                  onRegresoChange={(newTime) =>
-                    handleFlightTimeChange(index, 'regreso', newTime)
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <div className="space-y-4">
+                  {/* Multi-day selection */}
+                  <div>
+                    <Label className="text-white">Días de Vuelo</Label>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {DAYS.map((day) => {
+                        const isSelected = currentDays.includes(day)
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            onClick={() => toggleDay(index, day)}
+                            className={`px-2 py-1 rounded-md text-sm font-medium ${
+                              isSelected
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-600 text-white hover:bg-gray-500'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Time Selector */}
+                  <TimeSelector
+                    label="Horarios"
+                    idaValue={time.ida}
+                    regresoValue={time.regreso}
+                    onIdaChange={(newTime) =>
+                      handleFlightTimeChange(index, 'ida', newTime)
+                    }
+                    onRegresoChange={(newTime) =>
+                      handleFlightTimeChange(index, 'regreso', newTime)
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Price Periods Section */}
@@ -323,13 +360,12 @@ const PriceEditor: React.FC<PriceEditorProps> = ({
         ))}
       </div>
 
-      {/* Baggage Information Section */}
+      {/* Baggage & Additional Info Sections */}
       <BaggageInfoEditor
         destinationData={localData}
         onBaggageInfoUpdate={handleBaggageInfoUpdate}
       />
 
-      {/* Additional Information Section */}
       <InfoEditor
         destinationData={localData}
         onInfoUpdate={handleAdditionalInfoUpdate}
