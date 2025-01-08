@@ -4,15 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "init-db": "ts-node scripts/init-firestore.js",
     "set-admin": "node --loader ts-node/esm scripts/set-admin.ts",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean": "rm -rf .next && npm cache clean --force && npm install --legacy-peer-deps"
   },
   "dependencies": {
     "@firebase/firestore": "^4.7.4",
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13",
     "@radix-ui/react-label": "^2.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "axios": "^1.7.7",
@@ -25,8 +28,8 @@
     "next": "15.0.2",
     "nookies": "^2.5.2",
     "puppeteer": "^23.7.0",
-    "react": "19.0.0-rc-02c0e824-20241028",
-    "react-dom": "19.0.0-rc-02c0e824-20241028",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "react-icons": "^5.3.0",
     "recharts": "^2.13.3",
     "tailwind-merge": "^2.5.5"
